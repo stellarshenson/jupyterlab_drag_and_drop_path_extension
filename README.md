@@ -12,9 +12,21 @@ Drag a file or folder from the file browser and drop it onto a terminal, Python 
 
 ## Features
 
-- **Drop onto a terminal** - inserts the dropped file or folder path as plain text
-- **Drop onto a Python file or notebook** - inserts the path, or a `pathlib.Path(...)` expression
-- **Configurable Python output** - choose plain path (default) or Pathlib expression via extension settings
+- **Drop onto a terminal** - inserts the path as a shell-escaped argument and brings the terminal tab to the foreground
+- **Drop onto a Python file or notebook code cell** - inserts a quoted string literal, or a `pathlib` expression joined with the `/` operator (e.g. `pathlib.Path('/home/me') / 'data' / 'file.csv'`)
+- **Drop onto a notebook** - the path lands at the active cell's current cursor position
+- **Absolute or relative paths** - configurable; relative is computed against the terminal's working directory or the open document's directory
+- **Multi-file safety** - drags carrying more than one item are ignored
+- **Master on/off switch** - disable the extension without uninstalling
+
+## Settings
+
+Configure under **Settings -> Drag and Drop Path**:
+
+- `enabled` - master on/off (default `true`)
+- `pathType` - `absolute` or `relative` (default `relative`)
+- `pythonPathStyle` - `posix` for a quoted string literal, `pathlib` for a `Path(...)` expression (default `posix`)
+- `pathlibConstructor` - `pathlib.Path` or `Path`, used when `pythonPathStyle` is `pathlib` (default `pathlib.Path`)
 
 ## Requirements
 
