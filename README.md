@@ -19,6 +19,14 @@ Drag a file or folder from the file browser and drop it onto a terminal, Python 
 - **Multi-file safety** - drags carrying more than one item are ignored
 - **Master on/off switch** - disable the extension without uninstalling
 
+## Usage
+
+1. Open a target alongside the file browser - a **terminal**, a **Python file**, or a **notebook**
+2. Drag a single file or folder from the file browser onto the target
+3. The path is inserted - shell-escaped in terminals, as a quoted string or a `pathlib.Path(...)` expression in Python contexts, or as plain text elsewhere
+
+In notebooks the path lands at the active cell's current cursor position. Whether the path is absolute or relative, and how Python output is formatted, is controlled by the settings below.
+
 ## Settings
 
 Configure under **Settings -> Drag and Drop Path**:
@@ -47,3 +55,7 @@ To remove the extension, execute:
 ```bash
 pip uninstall jupyterlab_drag_and_drop_path
 ```
+
+## Acknowledgements
+
+Thanks to Paul Romer for the inspiration and the discussions about reducing user friction when working with hierarchical folder structures in JupyterLab.
