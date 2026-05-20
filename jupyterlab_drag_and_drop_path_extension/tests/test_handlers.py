@@ -9,7 +9,7 @@ import sys
 import pytest
 from unittest.mock import patch, MagicMock
 
-from jupyterlab_drag_and_drop_path.handlers import TerminalCwdHandler
+from jupyterlab_drag_and_drop_path_extension.handlers import TerminalCwdHandler
 
 
 class MockHandler:

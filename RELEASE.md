@@ -1,4 +1,4 @@
-# Making a new release of jupyterlab_drag_and_drop_path
+# Making a new release of jupyterlab_drag_and_drop_path_extension
 
 The extension can be published to `PyPI` and `npm` manually or using the [Jupyter Releaser](https://github.com/jupyter-server/jupyter_releaser).
 

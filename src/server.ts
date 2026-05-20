@@ -1,5 +1,5 @@
 /**
- * Calls to the `jupyterlab_drag_and_drop_path` server extension.
+ * Calls to the `jupyterlab_drag_and_drop_path_extension` server extension.
  */
 import { URLExt } from '@jupyterlab/coreutils';
 import { ServerConnection } from '@jupyterlab/services';
@@ -23,7 +23,10 @@ async function getJSON(...path: string[]): Promise<any | null> {
     }
     return await response.json();
   } catch (error) {
-    console.warn('[jupyterlab_drag_and_drop_path] request failed:', error);
+    console.warn(
+      '[jupyterlab_drag_and_drop_path_extension] request failed:',
+      error
+    );
     return null;
   }
 }

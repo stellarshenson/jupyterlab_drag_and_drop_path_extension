@@ -7778,9 +7778,9 @@ __metadata:
   languageName: node
   linkType: hard
 
-"jupyterlab_drag_and_drop_path@workspace:.":
+"jupyterlab_drag_and_drop_path_extension@workspace:.":
   version: 0.0.0-use.local
-  resolution: "jupyterlab_drag_and_drop_path@workspace:."
+  resolution: "jupyterlab_drag_and_drop_path_extension@workspace:."
   dependencies:
     "@jupyterlab/application": ^4.0.0
     "@jupyterlab/builder": ^4.0.0

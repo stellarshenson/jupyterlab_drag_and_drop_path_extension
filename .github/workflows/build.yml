@@ -43,9 +43,9 @@ jobs:
         python -m pip install .[test]
 
         jupyter server extension list
-        jupyter server extension list 2>&1 | grep -ie "jupyterlab_drag_and_drop_path.*OK"
+        jupyter server extension list 2>&1 | grep -ie "jupyterlab_drag_and_drop_path_extension.*OK"
         jupyter labextension list
-        jupyter labextension list 2>&1 | grep -ie "jupyterlab_drag_and_drop_path.*OK"
+        jupyter labextension list 2>&1 | grep -ie "jupyterlab_drag_and_drop_path_extension.*OK"
         python -m jupyterlab.browser_check
 
     - name: Package the extension
@@ -54,13 +54,13 @@ jobs:
 
         pip install build
         python -m build
-        pip uninstall -y "jupyterlab_drag_and_drop_path" jupyterlab
+        pip uninstall -y "jupyterlab_drag_and_drop_path_extension" jupyterlab
 
     - name: Upload extension packages
       uses: actions/upload-artifact@v4
       with:
         name: extension-artifacts
-        path: dist/jupyterlab_drag_and_drop_path*
+        path: dist/jupyterlab_drag_and_drop_path_extension*
         if-no-files-found: error
 
   test_isolated:
@@ -83,13 +83,13 @@ jobs:
         sudo rm -rf $(which node)
         sudo rm -rf $(which node)
 
-        pip install "jupyterlab>=4.0.0,<5" jupyterlab_drag_and_drop_path*.whl
+        pip install "jupyterlab>=4.0.0,<5" jupyterlab_drag_and_drop_path_extension*.whl
 
 
         jupyter server extension list
-        jupyter server extension list 2>&1 | grep -ie "jupyterlab_drag_and_drop_path.*OK"
+        jupyter server extension list 2>&1 | grep -ie "jupyterlab_drag_and_drop_path_extension.*OK"
         jupyter labextension list
-        jupyter labextension list 2>&1 | grep -ie "jupyterlab_drag_and_drop_path.*OK"
+        jupyter labextension list 2>&1 | grep -ie "jupyterlab_drag_and_drop_path_extension.*OK"
         python -m jupyterlab.browser_check --no-browser-test
 
   integration-tests:
@@ -117,7 +117,7 @@ jobs:
     - name: Install the extension
       run: |
         set -eux
-        python -m pip install "jupyterlab>=4.0.0,<5" jupyterlab_drag_and_drop_path*.whl
+        python -m pip install "jupyterlab>=4.0.0,<5" jupyterlab_drag_and_drop_path_extension*.whl
 
     - name: Install dependencies
       working-directory: ui-tests
@@ -149,7 +149,7 @@ jobs:
       if: always()
       uses: actions/upload-artifact@v4
       with:
-        name: jupyterlab_drag_and_drop_path-playwright-tests
+        name: jupyterlab_drag_and_drop_path_extension-playwright-tests
         path: |
           ui-tests/test-results
           ui-tests/playwright-report

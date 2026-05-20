@@ -1,7 +1,7 @@
 {
   "$schema": "http://json-schema.org/draft-07/schema#",
   "title": "Drag and Drop Path",
-  "description": "Settings for jupyterlab_drag_and_drop_path",
+  "description": "Settings for jupyterlab_drag_and_drop_path_extension",
   "type": "object",
   "properties": {
     "enabled": {

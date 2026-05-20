@@ -1,5 +1,5 @@
 {
-    "name": "jupyterlab_drag_and_drop_path",
+    "name": "jupyterlab_drag_and_drop_path_extension",
     "version": "0.8.6",
     "description": "Jupyterlab extension to allow file or folder to be dragged-and-dropped to terminal. And to turn into a path. And if the terminal is a python file or not a terminal but python notebook - it would be turned either into path again (default) or to Pathlib expression (depending on the config in the settings)",
     "keywords": [
@@ -7,9 +7,9 @@
         "jupyterlab",
         "jupyterlab-extension"
     ],
-    "homepage": "https://github.com/stellarshenson/jupyterlab_drag_and_drop_path",
+    "homepage": "https://github.com/stellarshenson/jupyterlab_drag_and_drop_path_extension",
     "bugs": {
-        "url": "https://github.com/stellarshenson/jupyterlab_drag_and_drop_path/issues"
+        "url": "https://github.com/stellarshenson/jupyterlab_drag_and_drop_path_extension/issues"
     },
     "license": "BSD-3-Clause",
     "author": {
@@ -26,7 +26,7 @@
     "style": "style/index.css",
     "repository": {
         "type": "git",
-        "url": "https://github.com/stellarshenson/jupyterlab_drag_and_drop_path.git"
+        "url": "https://github.com/stellarshenson/jupyterlab_drag_and_drop_path_extension.git"
     },
     "scripts": {
         "build": "jlpm build:lib && jlpm build:labextension:dev",
@@ -38,7 +38,7 @@
         "clean": "jlpm clean:lib",
         "clean:lib": "rimraf lib tsconfig.tsbuildinfo",
         "clean:lintcache": "rimraf .eslintcache .stylelintcache",
-        "clean:labextension": "rimraf jupyterlab_drag_and_drop_path/labextension jupyterlab_drag_and_drop_path/_version.py",
+        "clean:labextension": "rimraf jupyterlab_drag_and_drop_path_extension/labextension jupyterlab_drag_and_drop_path_extension/_version.py",
         "clean:all": "jlpm clean:lib && jlpm clean:labextension && jlpm clean:lintcache",
         "eslint": "jlpm eslint:check --fix",
         "eslint:check": "eslint . --cache --ext .ts,.tsx",
@@ -108,7 +108,7 @@
     },
     "jupyterlab": {
         "extension": true,
-        "outputDir": "jupyterlab_drag_and_drop_path/labextension",
+        "outputDir": "jupyterlab_drag_and_drop_path_extension/labextension",
         "schemaDir": "schema"
     },
     "eslintIgnore": [

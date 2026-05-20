@@ -5,20 +5,20 @@ except ImportError:
     # in editable mode with pip. It is highly recommended to install
     # the package from a stable release or in editable mode: https://pip.pypa.io/en/stable/topics/local-project-installs/#editable-installs
     import warnings
-    warnings.warn("Importing 'jupyterlab_drag_and_drop_path' outside a proper installation.")
+    warnings.warn("Importing 'jupyterlab_drag_and_drop_path_extension' outside a proper installation.")
     __version__ = "dev"
 
 
 def _jupyter_labextension_paths():
     return [{
         "src": "labextension",
-        "dest": "jupyterlab_drag_and_drop_path"
+        "dest": "jupyterlab_drag_and_drop_path_extension"
     }]
 
 
 def _jupyter_server_extension_points():
     return [{
-        "module": "jupyterlab_drag_and_drop_path"
+        "module": "jupyterlab_drag_and_drop_path_extension"
     }]
 
 
@@ -32,5 +32,5 @@ def _load_jupyter_server_extension(server_app):
 
     setup_handlers(server_app.web_app)
     server_app.log.info(
-        "jupyterlab_drag_and_drop_path server extension loaded."
+        "jupyterlab_drag_and_drop_path_extension server extension loaded."
     )

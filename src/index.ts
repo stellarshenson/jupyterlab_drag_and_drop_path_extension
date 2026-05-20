@@ -24,7 +24,7 @@ import { fetchServerRoot, fetchTerminalCwd } from './server';
 /**
  * The plugin id, also the id of the settings schema.
  */
-const PLUGIN_ID = 'jupyterlab_drag_and_drop_path:plugin';
+const PLUGIN_ID = 'jupyterlab_drag_and_drop_path_extension:plugin';
 
 /** Widget types tracked by the JupyterLab trackers. */
 type TerminalWidget = NonNullable<ITerminalTracker['currentWidget']>;
@@ -119,7 +119,7 @@ function setupTerminalDrop(
         const cwd = await fetchTerminalCwd(session.model.name);
         if (cwd === null) {
           console.warn(
-            '[jupyterlab_drag_and_drop_path] terminal cwd unavailable; ' +
+            '[jupyterlab_drag_and_drop_path_extension] terminal cwd unavailable; ' +
               'nothing inserted'
           );
           return;
@@ -225,7 +225,7 @@ function readSettings(loaded: ISettingRegistry.ISettings): ISettings {
 }
 
 /**
- * Initialization data for the jupyterlab_drag_and_drop_path extension.
+ * Initialization data for the jupyterlab_drag_and_drop_path_extension extension.
  */
 const plugin: JupyterFrontEndPlugin<void> = {
   id: PLUGIN_ID,
@@ -246,7 +246,7 @@ const plugin: JupyterFrontEndPlugin<void> = {
     notebooks: INotebookTracker
   ): Promise<void> => {
     console.log(
-      'JupyterLab extension jupyterlab_drag_and_drop_path is activated!'
+      'JupyterLab extension jupyterlab_drag_and_drop_path_extension is activated!'
     );
 
     const state: IExtensionState = {
@@ -269,7 +269,7 @@ const plugin: JupyterFrontEndPlugin<void> = {
       loaded.changed.connect(apply);
     } catch (error) {
       console.warn(
-        '[jupyterlab_drag_and_drop_path] could not load settings:',
+        '[jupyterlab_drag_and_drop_path_extension] could not load settings:',
         error
       );
     }
