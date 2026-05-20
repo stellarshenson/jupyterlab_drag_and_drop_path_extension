@@ -3,7 +3,7 @@ requires = ["hatchling>=1.5.0", "jupyterlab>=4.0.0,<5", "hatch-nodejs-version>=0
 build-backend = "hatchling.build"
 
 [project]
-name = "jupyterlab_drag_n_drop_path"
+name = "jupyterlab_drag_and_drop_path"
 readme = "README.md"
 license = { file = "LICENSE" }
 requires-python = ">=3.10"
@@ -23,6 +23,7 @@ classifiers = [
     "Programming Language :: Python :: 3.14",
 ]
 dependencies = [
+    "jupyter_server>=2.0.0,<3"
 ]
 dynamic = ["version", "description", "authors", "urls", "keywords"]
 
@@ -33,24 +34,25 @@ source = "nodejs"
 fields = ["description", "authors", "urls", "keywords"]
 
 [tool.hatch.build.targets.sdist]
-artifacts = ["jupyterlab_drag_n_drop_path/labextension"]
+artifacts = ["jupyterlab_drag_and_drop_path/labextension"]
 exclude = [".github", "binder"]
 
 [tool.hatch.build.targets.wheel.shared-data]
-"jupyterlab_drag_n_drop_path/labextension" = "share/jupyter/labextensions/jupyterlab_drag_n_drop_path"
-"install.json" = "share/jupyter/labextensions/jupyterlab_drag_n_drop_path/install.json"
+"jupyterlab_drag_and_drop_path/labextension" = "share/jupyter/labextensions/jupyterlab_drag_and_drop_path"
+"install.json" = "share/jupyter/labextensions/jupyterlab_drag_and_drop_path/install.json"
+"jupyter-config/server-config" = "etc/jupyter/jupyter_server_config.d"
 
 [tool.hatch.build.hooks.version]
-path = "jupyterlab_drag_n_drop_path/_version.py"
+path = "jupyterlab_drag_and_drop_path/_version.py"
 
 [tool.hatch.build.hooks.jupyter-builder]
 dependencies = ["hatch-jupyter-builder>=0.5"]
 build-function = "hatch_jupyter_builder.npm_builder"
 ensured-targets = [
-    "jupyterlab_drag_n_drop_path/labextension/static/style.js",
-    "jupyterlab_drag_n_drop_path/labextension/package.json",
+    "jupyterlab_drag_and_drop_path/labextension/static/style.js",
+    "jupyterlab_drag_and_drop_path/labextension/package.json",
 ]
-skip-if-exists = ["jupyterlab_drag_n_drop_path/labextension/static/style.js"]
+skip-if-exists = ["jupyterlab_drag_and_drop_path/labextension/static/style.js"]
 
 [tool.hatch.build.hooks.jupyter-builder.build-kwargs]
 build_cmd = "build:prod"
@@ -60,7 +62,7 @@ npm = ["jlpm"]
 build_cmd = "install:extension"
 npm = ["jlpm"]
 source_dir = "src"
-build_dir = "jupyterlab_drag_n_drop_path/labextension"
+build_dir = "jupyterlab_drag_and_drop_path/labextension"
 
 [tool.jupyter-releaser.options]
 version_cmd = "hatch version"
@@ -75,3 +77,12 @@ before-build-python = ["jlpm clean:all"]
 
 [tool.check-wheel-contents]
 ignore = ["W002"]
+
+[project.optional-dependencies]
+test = ["pytest>=7.0", "pytest-cov"]
+
+[tool.pytest.ini_options]
+testpaths = ["jupyterlab_drag_and_drop_path/tests"]
+python_files = ["test_*.py"]
+python_functions = ["test_*"]
+addopts = "-v --tb=short"

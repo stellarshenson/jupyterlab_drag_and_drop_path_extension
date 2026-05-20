@@ -21,21 +21,23 @@ The following workspace rules are STRICTLY ENFORCED for this project:
 
 ## Project Context
 
-`jupyterlab_drag_n_drop_path` is a JupyterLab 4 prebuilt frontend extension. It lets a user
+`jupyterlab_drag_and_drop_path` is a JupyterLab 4 prebuilt frontend extension. It lets a user
 drag a file or folder from the file browser and drop it onto a terminal, Python file, or
 notebook to insert its path - as plain text in terminals, and as a plain path or a
 `pathlib.Path(...)` expression in Python contexts depending on extension settings.
 
 **Technology Stack**:
+
 - TypeScript frontend extension targeting `@jupyterlab/application` ^4.0.0
 - Generated from the `jupyterlab/extension-template` copier template (v4.5.2)
-- Python package `jupyterlab_drag_n_drop_path`, built with `hatchling` and `hatch-jupyter-builder`
+- Python package `jupyterlab_drag_and_drop_path`, built with `hatchling` and `hatch-jupyter-builder`
 - `jlpm` (JupyterLab-pinned yarn) for JavaScript dependency management
 - Jest for frontend unit tests, Playwright/Galata for integration tests
 
 **Layout**:
+
 - `src/index.ts` - extension entry point (currently a scaffold stub)
-- `jupyterlab_drag_n_drop_path/` - Python package
+- `jupyterlab_drag_and_drop_path/` - Python package
 - `style/` - CSS assets
 - `ui-tests/` - Playwright integration tests
 

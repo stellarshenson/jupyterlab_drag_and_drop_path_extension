@@ -1,0 +1,36 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "Drag and Drop Path",
+  "description": "Settings for jupyterlab_drag_and_drop_path",
+  "type": "object",
+  "properties": {
+    "enabled": {
+      "title": "Enable drag-and-drop path insertion",
+      "description": "Master switch. When off, dragging a file or folder onto a terminal, editor or notebook does nothing.",
+      "type": "boolean",
+      "default": true
+    },
+    "pathType": {
+      "title": "Path type",
+      "description": "Whether dropped paths are absolute, or relative to the terminal cwd / the open document directory.",
+      "type": "string",
+      "enum": ["absolute", "relative"],
+      "default": "relative"
+    },
+    "pythonPathStyle": {
+      "title": "Python path style",
+      "description": "How a path is inserted into a Python file or notebook code cell: 'posix' inserts a quoted path string, 'pathlib' inserts a pathlib constructor expression.",
+      "type": "string",
+      "enum": ["posix", "pathlib"],
+      "default": "posix"
+    },
+    "pathlibConstructor": {
+      "title": "Pathlib constructor",
+      "description": "The constructor used when 'Python path style' is 'pathlib'.",
+      "type": "string",
+      "enum": ["pathlib.Path", "Path"],
+      "default": "pathlib.Path"
+    }
+  },
+  "additionalProperties": false
+}

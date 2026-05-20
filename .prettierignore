@@ -3,4 +3,4 @@ node_modules
 **/lib
 **/package.json
 !/package.json
-jupyterlab_drag_n_drop_path
+jupyterlab_drag_and_drop_path

@@ -1,7 +1,7 @@
 {
-  "name": "jupyterlab_drag_n_drop_path-ui-tests",
+  "name": "jupyterlab_drag_and_drop_path-ui-tests",
   "version": "1.0.0",
-  "description": "JupyterLab jupyterlab_drag_n_drop_path Integration Tests",
+  "description": "JupyterLab jupyterlab_drag_and_drop_path Integration Tests",
   "private": true,
   "scripts": {
     "start": "jupyter lab --config jupyter_server_test_config.py",

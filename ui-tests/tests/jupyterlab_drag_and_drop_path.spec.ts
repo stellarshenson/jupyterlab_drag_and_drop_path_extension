@@ -16,6 +16,9 @@ test('should emit an activation console message', async ({ page }) => {
   await page.goto();
 
   expect(
-    logs.filter(s => s === 'JupyterLab extension jupyterlab_drag_n_drop_path is activated!')
+    logs.filter(
+      s =>
+        s === 'JupyterLab extension jupyterlab_drag_and_drop_path is activated!'
+    )
   ).toHaveLength(1);
 });
