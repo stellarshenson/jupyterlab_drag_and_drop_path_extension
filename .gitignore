@@ -126,3 +126,6 @@ dmypy.json
 
 # Yarn cache
 .yarn/
+
+# project-local node environment (make install_dependencies)
+.nodeenv/
