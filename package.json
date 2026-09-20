@@ -1,7 +1,7 @@
 {
     "name": "jupyterlab_drag_and_drop_path_extension",
-    "version": "1.0.2",
-    "description": "Jupyterlab extension to allow file or folder to be dragged-and-dropped to terminal. And to turn into a path. And if the terminal is a python file or not a terminal but python notebook - it would be turned either into path again (default) or to Pathlib expression (depending on the config in the settings)",
+    "version": "1.0.3",
+    "description": "Drag a file or folder from the file browser and drop it onto a terminal, Python file, or notebook to insert its path.",
     "keywords": [
         "jupyter",
         "jupyterlab",
@@ -64,7 +64,6 @@
         "@jupyterlab/services": "^7.0.0",
         "@jupyterlab/settingregistry": "^4.0.0",
         "@jupyterlab/terminal": "^4.0.0",
-        "@lumino/coreutils": "^2.0.0",
         "@lumino/dragdrop": "^2.0.0"
     },
     "devDependencies": {
@@ -204,5 +203,8 @@
             "selector-no-vendor-prefix": null,
             "value-no-vendor-prefix": null
         }
+    },
+    "allowScripts": {
+        "@fortawesome/fontawesome-free": true
     }
 }
