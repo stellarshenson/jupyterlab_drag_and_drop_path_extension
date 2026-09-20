@@ -139,12 +139,27 @@ export function resolvePath(
  * character outside a safe set is backslash-escaped.
  */
 export function shellEscape(path: string): string {
-  return path.replace(/([^A-Za-z0-9_./@%+:,=-])/g, '\\$1');
+  // The `u` flag is load-bearing: without it the regex matches UTF-16 code
+  // units, so a character outside the basic plane - an emoji in a filename -
+  // is split and a backslash is inserted between the halves of its surrogate
+  // pair. The pty then receives lone surrogates, which fail to encode.
+  return path.replace(/[^A-Za-z0-9_./@%+:,=-]/gu, '\\$&');
 }
 
 /** Wrap a path in a single-quoted Python string literal. */
 export function pythonString(path: string): string {
-  return "'" + path.replace(/\\/g, '\\\\').replace(/'/g, "\\'") + "'";
+  return (
+    "'" +
+    path
+      .replace(/\\/g, '\\\\')
+      .replace(/'/g, "\\'")
+      // A raw newline inside a single-quoted literal is a syntax error, so a
+      // filename containing one would insert code the cell cannot parse.
+      .replace(/\n/g, '\\n')
+      .replace(/\r/g, '\\r')
+      .replace(/\t/g, '\\t') +
+    "'"
+  );
 }
 
 /**
@@ -179,6 +194,23 @@ export function formatForPython(
     .map(segment => pythonString(segment))
     .join(' / ');
   return `${head} / ${tail}`;
+}
+
+/** Media types that denote Python source. */
+const PYTHON_MIME_TYPES = ['text/x-python', 'text/x-ipython'];
+
+/**
+ * Whether a CodeMirror mimetype denotes Python source.
+ *
+ * This is an exact match on the media type, deliberately not a substring
+ * test: JupyterLab gives markdown the mimetype `text/x-ipythongfm`, which
+ * contains the substring `python` and would otherwise be read as Python,
+ * so every markdown file would receive a quoted string instead of a path.
+ * Any parameters after a `;` are ignored.
+ */
+export function isPythonMimeType(mimeType: string): boolean {
+  const media = mimeType.split(';')[0].trim().toLowerCase();
+  return PYTHON_MIME_TYPES.includes(media);
 }
 
 /**

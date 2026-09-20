@@ -1,0 +1,296 @@
+import { expect, test } from '@jupyterlab/galata';
+
+import {
+  allCellSources,
+  dragOverCurrentWidget,
+  dropOnCurrentWidget,
+  editorSource,
+  openDocument,
+  openEditor,
+  markPage,
+  pageStillMarked,
+  PLAIN_FILE,
+  setPluginSettings,
+  setPluginSettingsLive
+} from './helpers';
+
+/**
+ * Functional tests for the settings gate and the remaining edge cases.
+ * Settings are written through the server API and the page reloaded, so the
+ * plugin reads them during activation exactly as a user's change would be read.
+ */
+
+test.beforeEach(async ({ page }) => {
+  await page.contents.uploadContent('a,b\n', 'text', PLAIN_FILE);
+});
+
+test.describe('settings', () => {
+  test('enabled off makes the extension inert', async ({ page }) => {
+    await setPluginSettings(page, { enabled: false });
+    await page.contents.uploadContent('', 'text', 'off.py');
+    await openEditor(page, 'off.py');
+
+    await dropOnCurrentWidget(page, [PLAIN_FILE]);
+    await page.waitForTimeout(600);
+
+    expect(await editorSource(page)).toBe('');
+  });
+
+  test('enabled on by default inserts', async ({ page }) => {
+    // No settings written: the schema default must be on.
+    await page.contents.uploadContent('', 'text', 'default.py');
+    await openEditor(page, 'default.py');
+
+    await dropOnCurrentWidget(page, [PLAIN_FILE]);
+
+    expect(await editorSource(page)).toBe(`'${PLAIN_FILE}'`);
+  });
+
+  test('a disabled drag is not accepted by the drop target', async ({
+    page
+  }) => {
+    await setPluginSettings(page, { enabled: false });
+    await page.contents.uploadContent('', 'text', 'accept.py');
+    await openEditor(page, 'accept.py');
+
+    // dropAction stays at its initial value when the handler declines the drag.
+    const action = await dragOverCurrentWidget(page, [PLAIN_FILE]);
+
+    expect(action).toBe('none');
+  });
+
+  test('an enabled single-item drag is accepted', async ({ page }) => {
+    await page.contents.uploadContent('', 'text', 'accept2.py');
+    await openEditor(page, 'accept2.py');
+
+    const action = await dragOverCurrentWidget(page, [PLAIN_FILE]);
+
+    expect(action).toBe('move');
+  });
+
+  test('a multi-item drag is not accepted', async ({ page }) => {
+    await page.contents.uploadContent('', 'text', 'accept3.py');
+    await openEditor(page, 'accept3.py');
+
+    const action = await dragOverCurrentWidget(page, ['a.csv', 'b.csv']);
+
+    expect(action).toBe('none');
+  });
+
+  test('pathlib style inserts a constructor expression', async ({ page }) => {
+    await setPluginSettings(page, { pythonPathStyle: 'pathlib' });
+    await page.contents.uploadContent('', 'text', 'plib.py');
+    await openEditor(page, 'plib.py');
+
+    await dropOnCurrentWidget(page, [PLAIN_FILE]);
+
+    expect(await editorSource(page)).toBe(`pathlib.Path('${PLAIN_FILE}')`);
+  });
+
+  test('the pathlib constructor follows the setting', async ({ page }) => {
+    await setPluginSettings(page, {
+      pythonPathStyle: 'pathlib',
+      pathlibConstructor: 'Path'
+    });
+    await page.contents.uploadContent('', 'text', 'plib2.py');
+    await openEditor(page, 'plib2.py');
+
+    await dropOnCurrentWidget(page, [PLAIN_FILE]);
+
+    expect(await editorSource(page)).toBe(`Path('${PLAIN_FILE}')`);
+  });
+
+  test('absolute path type inserts a path under the server root', async ({
+    page
+  }) => {
+    await setPluginSettings(page, { pathType: 'absolute' });
+    await page.contents.uploadContent('', 'text', 'abs.py');
+    await openEditor(page, 'abs.py');
+
+    await dropOnCurrentWidget(page, [PLAIN_FILE]);
+
+    const source = await editorSource(page);
+    expect(source).toMatch(/^'\/.*dropme\.csv'$/);
+  });
+
+  test('relative is the default path type', async ({ page }) => {
+    await page.contents.createDirectory('deep');
+    await page.contents.uploadContent('', 'text', 'deep/rel.py');
+    await openEditor(page, 'deep/rel.py');
+
+    await dropOnCurrentWidget(page, [PLAIN_FILE]);
+
+    expect(await editorSource(page)).toBe(`'../${PLAIN_FILE}'`);
+  });
+
+  test('posix is the default python style', async ({ page }) => {
+    await page.contents.uploadContent('', 'text', 'posix.py');
+    await openEditor(page, 'posix.py');
+
+    await dropOnCurrentWidget(page, [PLAIN_FILE]);
+
+    const source = await editorSource(page);
+    expect(source).toBe(`'${PLAIN_FILE}'`);
+    expect(source).not.toContain('Path(');
+  });
+});
+
+test.describe('live settings', () => {
+  test('a setting change applies to the next drop without a reload', async ({
+    page
+  }) => {
+    await page.contents.uploadContent('', 'text', 'live.py');
+    await openEditor(page, 'live.py');
+    await markPage(page);
+
+    // Relative is the default, so the first drop inserts the bare name.
+    await dropOnCurrentWidget(page, [PLAIN_FILE]);
+    expect(await editorSource(page)).toBe(`'${PLAIN_FILE}'`);
+
+    await setPluginSettingsLive(page, { pathType: 'absolute' });
+
+    await dropOnCurrentWidget(page, [PLAIN_FILE]);
+
+    // The second insertion carries the server root, which only the new
+    // setting produces. Its position in the text is not asserted: these drops
+    // carry no coordinates, and CodeMirror resolves (0, 0) to the start of the
+    // document rather than declining it, so the second text lands ahead of the
+    // first rather than after it.
+    await expect
+      .poll(async () => editorSource(page), { timeout: 10000 })
+      .toMatch(/'\/[^']*dropme\.csv'/);
+    // The relative insertion the old setting produced is still there, so the
+    // two drops really did read different settings.
+    expect(await editorSource(page)).toContain(`'${PLAIN_FILE}'`);
+    // The mark survives only if the page was never reloaded, which is the
+    // half of this criterion an assertion on the text alone cannot reach.
+    expect(await pageStillMarked(page)).toBe(true);
+  });
+});
+
+test.describe('edge cases', () => {
+  test('editor holds focus after insertion', async ({ page }) => {
+    await page.contents.uploadContent('', 'text', 'focus.py');
+    await openEditor(page, 'focus.py');
+
+    // Move focus out of the editor first.
+    await page.evaluate(() => {
+      (window as any).jupyterapp.shell.activateById('filebrowser');
+      (document.activeElement as HTMLElement)?.blur();
+    });
+
+    await dropOnCurrentWidget(page, [PLAIN_FILE]);
+    await page.waitForTimeout(500);
+
+    const focused = await page.evaluate(() => {
+      const widget = (window as any).jupyterapp.shell.currentWidget;
+      return widget.content.editor.hasFocus();
+    });
+    expect(focused).toBe(true);
+  });
+
+  test('insertion lands at the drop coordinates in an editor', async ({
+    page
+  }) => {
+    await page.contents.uploadContent(
+      'line0\nline1\nline2\n',
+      'text',
+      'coords.py'
+    );
+    await openEditor(page, 'coords.py');
+
+    // Put the caret at the very start, then drop over the third line.
+    await page.evaluate(() => {
+      const editor = (window as any).jupyterapp.shell.currentWidget.content
+        .editor;
+      editor.focus();
+      editor.setCursorPosition({ line: 0, column: 0 });
+    });
+
+    const target = await page.evaluate(() => {
+      const lines = document.querySelectorAll('.cm-content .cm-line');
+      const rect = lines[2].getBoundingClientRect();
+      return { x: Math.round(rect.left + 2), y: Math.round(rect.top + 2) };
+    });
+
+    await dropOnCurrentWidget(page, [PLAIN_FILE], target);
+    await page.waitForTimeout(500);
+
+    const source = await editorSource(page);
+    // Landed on line2, not at the caret on line0.
+    expect(source.split('\n')[0]).toBe('line0');
+    expect(source.split('\n')[2]).toContain(PLAIN_FILE);
+  });
+
+  test('a notebook with no active cell inserts nothing', async ({ page }) => {
+    const notebook = JSON.stringify({
+      cells: [
+        {
+          cell_type: 'code',
+          execution_count: null,
+          metadata: {},
+          outputs: [],
+          source: 'KEEP'
+        }
+      ],
+      metadata: {
+        kernelspec: {
+          display_name: 'Python 3',
+          language: 'python',
+          name: 'python3'
+        },
+        language_info: { name: 'python' }
+      },
+      nbformat: 4,
+      nbformat_minor: 5
+    });
+    await page.contents.uploadContent(notebook, 'text', 'nocell.ipynb');
+    await page.evaluate(async () => {
+      await (window as any).jupyterapp.commands.execute('docmanager:open', {
+        path: 'nocell.ipynb',
+        factory: 'Notebook'
+      });
+    });
+    await page.waitForTimeout(1500);
+
+    // `activeCellIndex = -1` is clamped back to 0 by JupyterLab, so the state
+    // this guard defends against is not reachable through the UI. Force it
+    // directly to prove the guard returns instead of throwing.
+    const errors: string[] = [];
+    page.on('pageerror', error => errors.push(error.message));
+    await page.evaluate(() => {
+      const notebook = (window as any).jupyterapp.shell.currentWidget.content;
+      Object.defineProperty(notebook, 'activeCell', {
+        get: () => null,
+        configurable: true
+      });
+    });
+
+    await dropOnCurrentWidget(page, [PLAIN_FILE]);
+    await page.waitForTimeout(500);
+
+    const sources = await page.evaluate(() => {
+      const notebook = (window as any).jupyterapp.shell.currentWidget.content;
+      const model = notebook.model;
+      const out: string[] = [];
+      for (let i = 0; i < model.cells.length; i++) {
+        out.push(model.cells.get(i).sharedModel.getSource());
+      }
+      return out;
+    });
+    expect(sources).toEqual(['KEEP']);
+    expect(errors).toEqual([]);
+  });
+
+  test('server root is reported as an absolute path', async ({ page }) => {
+    const info = await page.evaluate(async () => {
+      const base =
+        (window as any).jupyterapp.serviceManager.serverSettings.baseUrl ?? '/';
+      const response = await fetch(`${base}api/drag-and-drop-path/server-info`);
+      return { status: response.status, body: await response.json() };
+    });
+    expect(info.status).toBe(200);
+    expect(info.body.root_dir).toMatch(/^\//);
+    expect(info.body.root_dir).not.toContain('~');
+  });
+});

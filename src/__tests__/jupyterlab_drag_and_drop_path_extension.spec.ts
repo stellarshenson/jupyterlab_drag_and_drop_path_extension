@@ -10,6 +10,7 @@ import {
   relative,
   resolvePath,
   shellEscape,
+  isPythonMimeType,
   singleDraggedPath
 } from '../paths';
 
@@ -158,5 +159,72 @@ describe('singleDraggedPath', () => {
   it('returns null for non-array data', () => {
     expect(singleDraggedPath(undefined)).toBeNull();
     expect(singleDraggedPath('a/b.csv')).toBeNull();
+  });
+});
+
+describe('isPythonMimeType', () => {
+  it('accepts the python media types', () => {
+    expect(isPythonMimeType('text/x-python')).toBe(true);
+    expect(isPythonMimeType('text/x-ipython')).toBe(true);
+  });
+
+  it('rejects markdown, whose mimetype contains "python" as a substring', () => {
+    // JupyterLab gives markdown `text/x-ipythongfm`. A substring test on
+    // 'python' matches it, which made every markdown file insert a quoted
+    // Python string instead of a bare path.
+    expect(isPythonMimeType('text/x-ipythongfm')).toBe(false);
+  });
+
+  it('rejects other languages', () => {
+    expect(isPythonMimeType('text/plain')).toBe(false);
+    expect(isPythonMimeType('text/x-rsrc')).toBe(false);
+    expect(isPythonMimeType('application/json')).toBe(false);
+  });
+
+  it('ignores parameters and case', () => {
+    expect(isPythonMimeType('TEXT/X-PYTHON')).toBe(true);
+    expect(isPythonMimeType('text/x-python; charset=utf-8')).toBe(true);
+  });
+});
+
+describe('shellEscape unicode handling', () => {
+  it('keeps a non-BMP character intact', () => {
+    // Regression for DEF-TERM-12: without the `u` flag the regex matches
+    // UTF-16 code units and backslashes between the halves of the surrogate
+    // pair, so the pty receives lone surrogates that fail to encode.
+    const escaped = shellEscape('data/\u{1F600}.csv');
+    expect(escaped).toBe('data/\\\u{1F600}.csv');
+    expect(escaped).not.toMatch(/[\uD800-\uDBFF](?![\uDC00-\uDFFF])/);
+    expect(escaped).not.toMatch(/(?<![\uD800-\uDBFF])[\uDC00-\uDFFF]/);
+  });
+
+  it('round-trips a non-BMP path through the escape', () => {
+    const original = 'a/\u{1F4C1}/b.csv';
+    expect(shellEscape(original).replace(/\\(.)/gu, '$1')).toBe(original);
+  });
+
+  it('still escapes spaces and metacharacters', () => {
+    expect(shellEscape('/home/my data/f (1).csv')).toBe(
+      '/home/my\\ data/f\\ \\(1\\).csv'
+    );
+  });
+});
+
+describe('pythonString control characters', () => {
+  it('escapes a newline so the literal still parses', () => {
+    // Regression for DEF-PATHS-14: a raw newline inside a single-quoted
+    // literal is a SyntaxError in the cell it is dropped into.
+    expect(pythonString('a\nb.txt')).toBe("'a\\nb.txt'");
+    expect(pythonString('a\nb.txt')).not.toContain('\n');
+  });
+
+  it('escapes carriage return and tab', () => {
+    expect(pythonString('a\rb')).toBe("'a\\rb'");
+    expect(pythonString('a\tb')).toBe("'a\\tb'");
+  });
+
+  it('still escapes quotes and backslashes', () => {
+    expect(pythonString("/a'b")).toBe("'/a\\'b'");
+    expect(pythonString('/a\\b')).toBe("'/a\\\\b'");
   });
 });

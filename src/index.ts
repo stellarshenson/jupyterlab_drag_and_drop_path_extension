@@ -14,6 +14,7 @@ import {
   DEFAULT_SETTINGS,
   dirname,
   formatForPython,
+  isPythonMimeType,
   ISettings,
   resolvePath,
   shellEscape,
@@ -101,6 +102,36 @@ function insertAtDrop(
   editor.focus();
 }
 
+/**
+ * Resolve a dragged path for a document, or return null when the result
+ * would be wrong.
+ *
+ * An absolute path needs the server root. When the server extension is
+ * unavailable the root is empty, and joining an empty root yields the bare
+ * contents path - a relative path silently emitted where an absolute one was
+ * asked for, which can address a different existing file. Refusing is the
+ * same answer the terminal branch already gives for a missing cwd.
+ */
+function resolveOrRefuse(
+  state: IExtensionState,
+  contentsPath: string,
+  baseDir: string,
+  baseIsAbsolute: boolean
+): string | null {
+  if (state.settings.pathType === 'absolute' && !state.rootDir) {
+    console.warn(
+      '[jupyterlab_drag_and_drop_path_extension] server root unavailable; ' +
+        'nothing inserted'
+    );
+    return null;
+  }
+  return resolvePath(contentsPath, state.settings.pathType, {
+    rootDir: state.rootDir,
+    baseDir,
+    baseIsAbsolute
+  });
+}
+
 /** Wire drop handling for a terminal: always inserts a shell-escaped path. */
 function setupTerminalDrop(
   widget: TerminalWidget,
@@ -130,6 +161,13 @@ function setupTerminalDrop(
           baseIsAbsolute: true
         });
       } else {
+        if (!state.rootDir) {
+          console.warn(
+            '[jupyterlab_drag_and_drop_path_extension] server root ' +
+              'unavailable; nothing inserted'
+          );
+          return;
+        }
         resolved = resolvePath(contentsPath, 'absolute', {
           rootDir: state.rootDir,
           baseDir: '',
@@ -147,7 +185,7 @@ function isPythonEditor(widget: EditorWidget): boolean {
   if (path.endsWith('.py') || path.endsWith('.pyi')) {
     return true;
   }
-  return widget.content.editor.model.mimeType.includes('python');
+  return isPythonMimeType(widget.content.editor.model.mimeType);
 }
 
 /** Wire drop handling for a file editor. */
@@ -156,11 +194,15 @@ function setupEditorDrop(widget: EditorWidget, state: IExtensionState): void {
     widget.node,
     () => state.settings.enabled,
     (contentsPath, event) => {
-      const resolved = resolvePath(contentsPath, state.settings.pathType, {
-        rootDir: state.rootDir,
-        baseDir: dirname(widget.context.path),
-        baseIsAbsolute: false
-      });
+      const resolved = resolveOrRefuse(
+        state,
+        contentsPath,
+        dirname(widget.context.path),
+        false
+      );
+      if (resolved === null) {
+        return;
+      }
       const text = isPythonEditor(widget)
         ? formatForPython(
             resolved,
@@ -173,7 +215,34 @@ function setupEditorDrop(widget: EditorWidget, state: IExtensionState): void {
   );
 }
 
-/** Wire drop handling for a notebook: inserts into the active cell at the cursor. */
+/** A notebook cell, as the notebook itself types them. */
+type NotebookCell = NotebookWidget['content']['widgets'][number];
+
+/**
+ * The cell the drop point sits over, or null when it sits over none of them.
+ *
+ * The drop listener is on the whole notebook panel, so a drop can land on the
+ * toolbar or in the gap below the last cell as easily as on a cell.
+ */
+function cellAtPoint(
+  notebook: NotebookWidget['content'],
+  event: Drag.Event
+): NotebookCell | null {
+  for (const cell of notebook.widgets) {
+    const rect = cell.node.getBoundingClientRect();
+    if (
+      event.clientX >= rect.left &&
+      event.clientX <= rect.right &&
+      event.clientY >= rect.top &&
+      event.clientY <= rect.bottom
+    ) {
+      return cell;
+    }
+  }
+  return null;
+}
+
+/** Wire drop handling for a notebook: inserts into the dropped-on cell. */
 function setupNotebookDrop(
   widget: NotebookWidget,
   state: IExtensionState
@@ -181,21 +250,41 @@ function setupNotebookDrop(
   attachDropTarget(
     widget.node,
     () => state.settings.enabled,
-    (contentsPath, _event) => {
+    (contentsPath, event) => {
       const notebook = widget.content;
-      // Use the active cell's current cursor position rather than the drop
+      // The cell the pointer is over takes the drop, so a drop on cell 3 does
+      // not land in cell 0 just because the caret was left there. Over no cell
+      // at all, the active cell keeps it.
+      const dropped = cellAtPoint(notebook, event);
+      if (dropped) {
+        notebook.activeCellIndex = notebook.widgets.indexOf(dropped);
+      }
+      // Within the cell, insert at its cursor rather than at the drop
       // coordinates - the user expects the path to land where their caret is.
       const cell = notebook.activeCell;
       if (!cell || !cell.editor) {
         return;
       }
-      const resolved = resolvePath(contentsPath, state.settings.pathType, {
-        rootDir: state.rootDir,
-        baseDir: dirname(widget.context.path),
-        baseIsAbsolute: false
-      });
+      const resolved = resolveOrRefuse(
+        state,
+        contentsPath,
+        dirname(widget.context.path),
+        false
+      );
+      if (resolved === null) {
+        return;
+      }
+      // `codeMimetype` is derived from the running kernel and stays
+      // `text/plain` until its language info arrives, so a drop made before
+      // the kernel connects would otherwise insert an unquoted path into a
+      // Python cell. The notebook's own metadata already names the language.
+      const declaredLanguage = (
+        widget.context.model.defaultKernelLanguage || ''
+      ).toLowerCase();
       const isPython =
-        cell.model.type === 'code' && notebook.codeMimetype.includes('python');
+        cell.model.type === 'code' &&
+        (isPythonMimeType(notebook.codeMimetype) ||
+          declaredLanguage === 'python');
       const text = isPython
         ? formatForPython(
             resolved,
@@ -230,7 +319,7 @@ function readSettings(loaded: ISettingRegistry.ISettings): ISettings {
 const plugin: JupyterFrontEndPlugin<void> = {
   id: PLUGIN_ID,
   description:
-    'Jupyterlab extension to allow file or folder to be dragged-and-dropped to terminal. And to turn into a path. And if the terminal is a python file or not a terminal but python notebook - it would be turned either into path again (default) or to Pathlib expression (depending on the config in the settings)',
+    'Drag a file or folder from the file browser and drop it onto a terminal, Python file, or notebook to insert its path.',
   autoStart: true,
   requires: [
     ISettingRegistry,
@@ -255,6 +344,23 @@ const plugin: JupyterFrontEndPlugin<void> = {
       rootDir: ''
     };
 
+    // Attach the drop targets first. Every handler reads `state` at drop
+    // time, never at attach time, so the fetches below gate nothing - and if
+    // one of them never settles (a hung proxy, a blocked server) awaiting it
+    // first would leave the extension permanently inert with no error.
+    terminals.forEach(widget => setupTerminalDrop(widget, state));
+    terminals.widgetAdded.connect((_, widget) =>
+      setupTerminalDrop(widget, state)
+    );
+
+    editors.forEach(widget => setupEditorDrop(widget, state));
+    editors.widgetAdded.connect((_, widget) => setupEditorDrop(widget, state));
+
+    notebooks.forEach(widget => setupNotebookDrop(widget, state));
+    notebooks.widgetAdded.connect((_, widget) =>
+      setupNotebookDrop(widget, state)
+    );
+
     const rootDir = await fetchServerRoot();
     if (rootDir !== null) {
       state.rootDir = rootDir;
@@ -273,19 +379,6 @@ const plugin: JupyterFrontEndPlugin<void> = {
         error
       );
     }
-
-    terminals.forEach(widget => setupTerminalDrop(widget, state));
-    terminals.widgetAdded.connect((_, widget) =>
-      setupTerminalDrop(widget, state)
-    );
-
-    editors.forEach(widget => setupEditorDrop(widget, state));
-    editors.widgetAdded.connect((_, widget) => setupEditorDrop(widget, state));
-
-    notebooks.forEach(widget => setupNotebookDrop(widget, state));
-    notebooks.widgetAdded.connect((_, widget) =>
-      setupNotebookDrop(widget, state)
-    );
   }
 };
 

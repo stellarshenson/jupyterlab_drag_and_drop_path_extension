@@ -14,9 +14,8 @@ Drag a file or folder from the file browser and drop it onto a terminal, Python 
 
 - **Drop onto a terminal** - inserts the path as a shell-escaped argument and brings the terminal tab to the foreground
 - **Drop onto a Python file or notebook code cell** - inserts a quoted string literal, or a `pathlib` expression joined with the `/` operator (e.g. `pathlib.Path('/home/me') / 'data' / 'file.csv'`)
-- **Drop onto a notebook** - the path lands at the active cell's current cursor position
+- **Drop onto any other file** - markdown, text, JSON and the rest receive the bare path, with no quoting
 - **Absolute or relative paths** - configurable; relative is computed against the terminal's working directory or the open document's directory
-- **Multi-file safety** - drags carrying more than one item are ignored
 - **Master on/off switch** - disable the extension without uninstalling
 
 ## Usage
@@ -25,20 +24,22 @@ Drag a file or folder from the file browser and drop it onto a terminal, Python 
 2. Drag a single file or folder from the file browser onto the target
 3. The path is inserted - shell-escaped in terminals, as a quoted string or a `pathlib.Path(...)` expression in Python contexts, or as plain text elsewhere
 
-In notebooks the path lands at the active cell's current cursor position. Whether the path is absolute or relative, and how Python output is formatted, is controlled by the settings below.
+In notebooks the path lands in the cell you drop it on, at that cell's cursor position; a drop away from any cell goes to the active cell. One file or folder at a time: a drag carrying several items is refused and the cursor shows no-drop. Whether the path is absolute or relative, and how Python output is formatted, is controlled by the settings below.
 
 ## Settings
 
-Configure under **Settings -> Drag and Drop Path**:
+Open **Settings → Settings Editor → Drag and Drop Path**. Each entry below leads with the label the editor shows, with the JSON key in brackets for anyone editing the raw settings:
 
-- `enabled` - master on/off (default `true`)
-- `pathType` - `absolute` or `relative` (default `relative`)
-- `pythonPathStyle` - `posix` for a quoted string literal, `pathlib` for a `Path(...)` expression (default `posix`)
-- `pathlibConstructor` - `pathlib.Path` or `Path`, used when `pythonPathStyle` is `pathlib` (default `pathlib.Path`)
+- **Enable drag-and-drop path insertion** (`enabled`) - master on/off, default on
+- **Path type** (`pathType`) - `relative` (default) or `absolute`
+- **Python path style** (`pythonPathStyle`) - `posix` inserts a quoted string literal (default), `pathlib` inserts a `Path(...)` expression
+- **Pathlib constructor** (`pathlibConstructor`) - `pathlib.Path` (default) or `Path`; choose `Path` only in files that already do `from pathlib import Path`, because the extension inserts no import
 
 ## Requirements
 
 - JupyterLab >= 4.0.0
+- The wheel also installs and auto-enables a `jupyter_server` extension, which supplies the server root and each terminal's working directory
+- Relative paths **in a terminal** need that server extension and a readable process table - `/proc` on Linux, `lsof` on macOS. Where it is unavailable the extension inserts nothing rather than a wrong path; absolute paths and all editor and notebook drops are unaffected
 
 ## Install
 

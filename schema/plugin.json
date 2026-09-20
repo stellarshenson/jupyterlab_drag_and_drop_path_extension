@@ -12,7 +12,7 @@
     },
     "pathType": {
       "title": "Path type",
-      "description": "Whether dropped paths are absolute, or relative to the terminal cwd / the open document directory.",
+      "description": "Insert paths relative to the terminal's working directory or to the open document's folder. Absolute paths always work; relative paths in a terminal need the extension's server component, and where it is unavailable nothing is inserted rather than a wrong path.",
       "type": "string",
       "enum": ["absolute", "relative"],
       "default": "relative"
@@ -26,7 +26,7 @@
     },
     "pathlibConstructor": {
       "title": "Pathlib constructor",
-      "description": "The constructor used when 'Python path style' is 'pathlib'.",
+      "description": "The constructor used when Python path style is pathlib. Choose Path only in files that already do `from pathlib import Path` - the extension inserts the expression, never the import.",
       "type": "string",
       "enum": ["pathlib.Path", "Path"],
       "default": "pathlib.Path"

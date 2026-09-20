@@ -18,6 +18,17 @@ from jupyter_server.utils import url_path_join
 import tornado
 
 
+def resolve_root_dir(root_dir: str) -> str:
+    """Resolve a configured server root to an absolute filesystem path.
+
+    expanduser runs first: JupyterHub commonly sets root_dir to a "~/..."
+    path, and realpath alone treats the tilde as a literal directory name.
+    That produced inserted paths like ../../../~/workspace/file.md, because
+    the relative computation counted "~" as a real directory.
+    """
+    return os.path.realpath(os.path.expanduser(root_dir))
+
+
 class ServerInfoHandler(APIHandler):
     """Handler exposing the absolute server root directory."""
 
@@ -33,11 +44,7 @@ class ServerInfoHandler(APIHandler):
             self.finish(json.dumps({"error": "Could not determine server root"}))
             return
 
-        # expanduser first - JupyterHub commonly sets root_dir to a
-        # "~/..." path; realpath alone treats the tilde as a literal
-        # directory name and would not expand it.
-        resolved = os.path.realpath(os.path.expanduser(root_dir))
-        self.finish(json.dumps({"root_dir": resolved}))
+        self.finish(json.dumps({"root_dir": resolve_root_dir(root_dir)}))
 
 
 class TerminalCwdHandler(APIHandler):
@@ -61,8 +68,14 @@ class TerminalCwdHandler(APIHandler):
                 }))
                 return
 
-            # Get the terminal instance
-            terminal = terminal_manager.get_terminal(terminal_name)
+            # Look the terminal up; never create one. terminado's
+            # NamedTermManager.get_terminal is a get-*or-create* API, so
+            # calling it here would spawn a live shell for any name a
+            # request happens to carry - unbounded, unculled (the culler
+            # only starts from create()), and reachable by a plain GET,
+            # which tornado does not XSRF-check.
+            terminals = getattr(terminal_manager, "terminals", None) or {}
+            terminal = terminals.get(terminal_name)
 
             if terminal is None:
                 self.set_status(404)
@@ -97,10 +110,13 @@ class TerminalCwdHandler(APIHandler):
             }))
 
         except Exception as e:
-            self.log.error(f"Error getting terminal cwd: {e}")
+            # The message goes to the server log, not to the browser: the
+            # frontend discards the body on any non-ok response, so echoing
+            # the exception text buys nothing and discloses internals.
+            self.log.exception("Error getting terminal cwd: %s", e)
             self.set_status(500)
             self.finish(json.dumps({
-                "error": str(e)
+                "error": "Could not determine the terminal working directory"
             }))
 
     def _get_process_cwd(self, pid: int) -> str | None:
@@ -123,8 +139,11 @@ class TerminalCwdHandler(APIHandler):
         all_processes = []
         self._collect_process_tree(pid, 0, all_processes, known_shells)
 
-        # Sort by depth descending, shells first at each depth
-        all_processes.sort(key=lambda x: (-x[1], not x[2]))
+        # Shells first, then deepest first among them. Shell-ness has to be
+        # the primary key: with depth first, a non-shell child that changed
+        # directory outranks the shell the user is actually typing in, and
+        # the drop resolves against that child's directory.
+        all_processes.sort(key=lambda x: (not x[2], -x[1]))
 
         # Try each process, deepest shells first, but validate cwd
         for target_pid, depth, is_shell, comm in all_processes:
@@ -132,8 +151,12 @@ class TerminalCwdHandler(APIHandler):
             if cwd and self._is_valid_cwd(cwd):
                 return cwd
 
-        # Fallback: try the original pid directly
-        return self._try_get_cwd(pid)
+        # Fallback: the original pid, but held to the same validity gate.
+        # The loop above already tried this pid, so reaching here means its
+        # cwd was missing or rejected; returning it unchecked would hand back
+        # exactly the pseudo-filesystem paths _is_valid_cwd exists to filter.
+        cwd = self._try_get_cwd(pid)
+        return cwd if cwd and self._is_valid_cwd(cwd) else None
 
     def _is_valid_cwd(self, path: str) -> bool:
         """Check whether a cwd path is a real filesystem directory.
@@ -220,6 +243,11 @@ class TerminalCwdHandler(APIHandler):
             List of child PIDs
         """
         children = []
+        # An empty children file means "leaf", not "unreadable". Without this
+        # distinction the pgrep fallback fired for every leaf process, so a
+        # terminal running a wide build cost one subprocess spawn per leaf on
+        # every drop - each with a 5 second timeout, on the tornado IOLoop.
+        listed = False
         try:
             if sys.platform == "linux":
                 children_file = f"/proc/{parent_pid}/task/{parent_pid}/children"
@@ -230,9 +258,10 @@ class TerminalCwdHandler(APIHandler):
                                 children.append(int(child))
                             except ValueError:
                                 pass
+                    listed = True
 
-            # Fallback: use pgrep
-            if not children:
+            # Fallback: use pgrep, only when the children file was unavailable
+            if not listed and not children:
                 result = subprocess.run(
                     ["pgrep", "-P", str(parent_pid)],
                     capture_output=True,

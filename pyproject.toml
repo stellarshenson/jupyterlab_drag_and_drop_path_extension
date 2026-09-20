@@ -35,7 +35,7 @@ fields = ["description", "authors", "urls", "keywords"]
 
 [tool.hatch.build.targets.sdist]
 artifacts = ["jupyterlab_drag_and_drop_path_extension/labextension"]
-exclude = [".github", "binder"]
+exclude = [".github", "binder", ".claude", "docs", "ui-tests", "junit.xml", "uv.lock"]
 
 [tool.hatch.build.targets.wheel.shared-data]
 "jupyterlab_drag_and_drop_path_extension/labextension" = "share/jupyter/labextensions/jupyterlab_drag_and_drop_path_extension"

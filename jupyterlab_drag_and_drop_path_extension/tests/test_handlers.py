@@ -9,7 +9,10 @@ import sys
 import pytest
 from unittest.mock import patch, MagicMock
 
-from jupyterlab_drag_and_drop_path_extension.handlers import TerminalCwdHandler
+from jupyterlab_drag_and_drop_path_extension.handlers import (
+    TerminalCwdHandler,
+    resolve_root_dir,
+)
 
 
 class MockHandler:
@@ -255,3 +258,108 @@ class TestGetProcessComm:
         assert comm is not None
         assert isinstance(comm, str)
         assert len(comm) > 0
+
+
+class TestResolveRootDir:
+    """The server root must come back absolute, with no tilde left in it."""
+
+    def test_expands_a_leading_tilde(self):
+        # JupyterHub sets root_dir to "~/workspace". realpath alone leaves the
+        # tilde as a literal segment, which produced ../../../~/workspace/...
+        resolved = resolve_root_dir("~/workspace")
+        assert "~" not in resolved
+        assert resolved == os.path.realpath(os.path.expanduser("~/workspace"))
+
+    def test_bare_tilde_expands_to_home(self):
+        assert resolve_root_dir("~") == os.path.realpath(os.path.expanduser("~"))
+
+    def test_absolute_path_is_preserved(self):
+        assert resolve_root_dir("/tmp") == os.path.realpath("/tmp")
+
+    def test_result_is_always_absolute(self):
+        for candidate in ("~/workspace", "/tmp", "."):
+            assert os.path.isabs(resolve_root_dir(candidate))
+
+    def test_resolves_relative_segments(self):
+        assert resolve_root_dir("/tmp/../tmp") == os.path.realpath("/tmp")
+
+
+class TestShellPrecedence:
+    """A child that changed directory must not outrank the user's shell."""
+
+    def test_shell_wins_over_a_deeper_child_that_chdired(self, handler):
+        """A non-shell child at depth 1 must not beat the shell at depth 0.
+
+        Regression for DEF-TERM-11: the sort key ordered depth before
+        shell-ness, so any backgrounded job started from another directory
+        supplied the cwd and every relative drop resolved against it.
+        """
+        with patch.object(handler, "_try_get_cwd") as mock_try, \
+             patch.object(handler, "_collect_process_tree") as mock_collect, \
+             patch.object(handler, "_is_valid_cwd", return_value=True):
+
+            def populate_tree(pid, depth, results, known_shells):
+                results.append((100, 0, True, "bash"))
+                results.append((200, 1, False, "sleep"))
+
+            mock_collect.side_effect = populate_tree
+            mock_try.side_effect = lambda pid: {
+                100: "/home/test/work",
+                200: "/tmp/elsewhere",
+            }.get(pid)
+
+            assert handler._get_process_cwd(100) == "/home/test/work"
+
+    def test_deepest_shell_still_wins_among_shells(self, handler):
+        """Shell-ness is primary, depth is the tie-break among shells."""
+        with patch.object(handler, "_try_get_cwd") as mock_try, \
+             patch.object(handler, "_collect_process_tree") as mock_collect, \
+             patch.object(handler, "_is_valid_cwd", return_value=True):
+
+            def populate_tree(pid, depth, results, known_shells):
+                results.append((100, 0, True, "fish"))
+                results.append((200, 1, False, "mc"))
+                results.append((300, 2, True, "bash"))
+
+            mock_collect.side_effect = populate_tree
+            mock_try.side_effect = lambda pid: {
+                100: "/home/test",
+                200: "/home/test",
+                300: "/home/test/subshell",
+            }.get(pid)
+
+            assert handler._get_process_cwd(100) == "/home/test/subshell"
+
+
+class TestFallbackValidation:
+    """The final fallback must honour the same validity gate as the loop."""
+
+    def test_invalid_fallback_cwd_is_refused(self, handler):
+        """Regression for DEF-TERM-9.
+
+        The loop already tried the root pid, so reaching the fallback means
+        its cwd was missing or rejected. Returning it unchecked handed back
+        exactly the pseudo-filesystem paths the validator exists to filter.
+        """
+        with patch.object(handler, "_try_get_cwd", return_value="/proc/123/fdinfo"), \
+             patch.object(handler, "_collect_process_tree") as mock_collect, \
+             patch.object(handler, "_is_valid_cwd", return_value=False):
+
+            def populate_tree(pid, depth, results, known_shells):
+                results.append((100, 0, True, "bash"))
+
+            mock_collect.side_effect = populate_tree
+
+            assert handler._get_process_cwd(100) is None
+
+    def test_deleted_directory_fallback_is_refused(self, handler):
+        """A cwd readlink ending in " (deleted)" is not a usable directory."""
+        with patch.object(handler, "_try_get_cwd", return_value="/tmp/gone (deleted)"), \
+             patch.object(handler, "_collect_process_tree") as mock_collect:
+
+            def populate_tree(pid, depth, results, known_shells):
+                results.append((100, 0, True, "bash"))
+
+            mock_collect.side_effect = populate_tree
+
+            assert handler._get_process_cwd(100) is None

@@ -129,3 +129,6 @@ dmypy.json
 
 # project-local node environment (make install_dependencies)
 .nodeenv/
+
+# jest-junit report, written at the repo root by every test run
+junit.xml
