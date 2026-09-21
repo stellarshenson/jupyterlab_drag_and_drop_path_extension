@@ -4,6 +4,7 @@ import {
   activeCellSource,
   allCellSources,
   codeCell,
+  dragOverCurrentWidget,
   dropOnCurrentWidget,
   editorSource,
   markdownCell,
@@ -121,6 +122,20 @@ test.describe('notebook', () => {
     expect(await activeCellSource(page)).toBe(`A'${PLAIN_FILE}'B`);
   });
 
+  test('multi-item drag inserts nothing', async ({ page }) => {
+    await page.contents.uploadContent(
+      notebookFixture([codeCell('')]),
+      'text',
+      'multi.ipynb'
+    );
+    await openDocument(page, 'multi.ipynb', 'Notebook');
+
+    await dropOnCurrentWidget(page, [PLAIN_FILE, SPACED_FILE]);
+    await page.waitForTimeout(2000);
+
+    expect(await activeCellSource(page)).toBe('');
+  });
+
   test('the cell under the pointer takes the drop, not the active cell', async ({
     page
   }) => {
@@ -226,12 +241,32 @@ test.describe('terminal', () => {
       .toBe(terminalId);
   });
 
-  test('multi-item drag sends nothing', async ({ page }) => {
+  test('a multi-item drag is accepted', async ({ page }) => {
+    await openTerminalAndCaptureSends(page);
+
+    // The editor and the notebook decline the same drag; the terminal is the
+    // one target that takes it.
+    const action = await dragOverCurrentWidget(page, [PLAIN_FILE, SPACED_FILE]);
+
+    expect(action).toBe('move');
+  });
+
+  test('a multi-item drag sends every path in one line', async ({ page }) => {
     await openTerminalAndCaptureSends(page);
 
     await dropOnCurrentWidget(page, [PLAIN_FILE, SPACED_FILE]);
-    await page.waitForTimeout(2000);
 
-    expect(await sentStdin(page)).toEqual([]);
+    await expect
+      .poll(async () => (await sentStdin(page))[0], { timeout: 15000 })
+      .toMatch(/dropme\.csv \S*my\\ data\\ \\\(1\\\)\.csv$/);
+
+    // One send, not one per file: the paths arrive as a single insertion in
+    // the order the drag carried them.
+    expect(await sentStdin(page)).toHaveLength(1);
+    const sent = (await sentStdin(page))[0];
+    // Exactly one unescaped space - the separator. Every space inside a name
+    // is still escaped, so the shell reads two arguments, not four.
+    expect(sent.match(/(^|[^\\]) /g) ?? []).toHaveLength(1);
+    expect(sent).not.toContain('\r');
   });
 });

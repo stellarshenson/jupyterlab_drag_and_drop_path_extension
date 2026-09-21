@@ -64,6 +64,14 @@ Dropping a file or folder onto a terminal widget
   - root-cause: 2026-09-20T16:28:26Z @kj a non-unicode regex splits surrogate pairs
   - log: 2026-09-20T16:28:26Z @kj added
   - log: 2026-09-20T16:50:23Z @kj closed: fixed: shellEscape uses the u flag and escapes by code point
+- [x] `DEF-TERM-17` **relative terminal drop emitted a wrong path when the server root was unknown** - MAJOR; with path type relative, a terminal drop inserted a path like `../../data/a.csv` instead of refusing, whenever `state.rootDir` was empty; the root is fetched once at activation and never retried, so one failed `server-info` call left every later relative terminal drop wrong for the rest of the session, and a drop made before that one fetch settled hit the same window; the absolute branch already refused on an empty root, the relative branch did not
+  - evidence: galata 43/43 green on 2026-09-21 (ui-tests/tests/degraded.spec.ts): 'a terminal drop inserts nothing when the server root is unknown' routes server-info to 500 with terminal-cwd answering; no stdin is sent and a 'server root unavailable' warning is logged. Fix: the guard moved above both branches in setupTerminalDrop (src/index.ts)
+  - repro: route GET api/drag-and-drop-path/server-info to 500, leave terminal-cwd answering, open a terminal and drop a file with path type relative
+  - test-tags: E2E
+  - root-cause: 2026-09-21T07:37:10Z @kj resolvePath('a.csv','relative',{rootDir:'',baseDir:'/home/lab',baseIsAbsolute:true}) joins the empty root to a relative path and then measures it against an absolute cwd, which yields one '..' per cwd segment; the guard sat inside the absolute branch instead of above both
+  - log: 2026-09-21T07:37:10Z @kj added
+  - log: 2026-09-21T07:37:29Z @kj amended text "MAJOR; with path type relative, a terminal drop inserted a path like `../../data/a.csv` instead of refusing, whenever `state.rootDir` was empty; the root is fetched once at activation and never retried, so one failed `server-info` call left every later relative terminal drop wrong for the rest of the session, and a drop made before that one fetch settled hit the same window; the absolute branch already refused on an empty root, the relative branch did not" -> "with path type relative, a terminal drop inserted a path like `../../data/a.csv` instead of refusing, whenever `state.rootDir` was empty; the root is fetched once at activation and never retried, so one failed `server-info` call left every later relative terminal drop wrong for the rest of the session, and a drop made before that one fetch settled hit the same window; the absolute branch already refused on an empty root, the relative branch did not"
+  - log: 2026-09-21T07:47:05Z @kj closed
 
 ## Notebook drop `NBOOK`
 

@@ -2,6 +2,23 @@
 
 <!-- <START NEW CHANGELOG ENTRY> -->
 
+## [1.0.4] - 2026-09-21
+
+### Added
+
+- A drag carrying several files, dropped on a terminal, inserts every path in one send, in the order they were selected; file editors and notebooks continue to refuse a multi-item drag
+- Setting `terminalSeparator`: `space` (default) puts the paths on one line as arguments, `newline` gives each a line of its own by ending the line with a backslash, which the shell reads as a continuation, so nothing runs until Enter is pressed
+- Setting `terminalQuotePaths`: off by default, so paths stay backslash-escaped; on, each path is wrapped in single quotes, with an embedded quote closed and reopened as `'\''`
+
+### Changed
+
+- The drop target decides what it accepts through a payload extractor rather than a fixed single-path reader, so the terminal takes a multi-item drag while the other targets decline it and show no drop cursor
+- Settings and README state the one constraint the newline separator carries: in bash, only the last line stays editable after the drop, so the command belongs before it
+
+### Fixed
+
+- A relative terminal drop emitted a path built on an empty server root - a `..` walk to a file that is not there - instead of refusing; the server root is fetched once at activation and never retried, so one failed call left every later relative terminal drop wrong
+
 ## [1.0.3] - 2026-09-20
 
 ### Added

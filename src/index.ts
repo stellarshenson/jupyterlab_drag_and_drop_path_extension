@@ -13,11 +13,12 @@ import {
   CONTENTS_MIME,
   DEFAULT_SETTINGS,
   dirname,
+  draggedPaths,
   formatForPython,
+  formatForTerminal,
   isPythonMimeType,
   ISettings,
   resolvePath,
-  shellEscape,
   singleDraggedPath
 } from './paths';
 import { fetchServerRoot, fetchTerminalCwd } from './server';
@@ -40,21 +41,23 @@ interface IExtensionState {
 }
 
 /**
- * Attach file-browser drop handling to a node. The callback receives the
- * single dragged contents path; multi-item drags are ignored.
+ * Attach file-browser drop handling to a node.
+ *
+ * `extract` reads the drag's payload and returns what this target accepts,
+ * or `null` to decline the drag - which is how a target that takes a single
+ * path declines a multi-item drag, leaving the cursor on no-drop.
  */
-function attachDropTarget(
+function attachDropTarget<T>(
   node: HTMLElement,
   isEnabled: () => boolean,
-  onDrop: (contentsPath: string, event: Drag.Event) => void
+  extract: (data: unknown) => T | null,
+  onDrop: (payload: T, event: Drag.Event) => void
 ): void {
-  const pathOf = (event: Drag.Event): string | null =>
-    isEnabled()
-      ? singleDraggedPath(event.mimeData.getData(CONTENTS_MIME))
-      : null;
+  const payloadOf = (event: Drag.Event): T | null =>
+    isEnabled() ? extract(event.mimeData.getData(CONTENTS_MIME)) : null;
 
   node.addEventListener('lm-dragenter', (event: Event) => {
-    if (pathOf(event as Drag.Event) === null) {
+    if (payloadOf(event as Drag.Event) === null) {
       return;
     }
     event.preventDefault();
@@ -63,7 +66,7 @@ function attachDropTarget(
 
   node.addEventListener('lm-dragover', (event: Event) => {
     const dragEvent = event as Drag.Event;
-    if (pathOf(dragEvent) === null) {
+    if (payloadOf(dragEvent) === null) {
       return;
     }
     dragEvent.preventDefault();
@@ -73,13 +76,13 @@ function attachDropTarget(
 
   node.addEventListener('lm-drop', (event: Event) => {
     const dragEvent = event as Drag.Event;
-    const contentsPath = pathOf(dragEvent);
-    if (contentsPath === null) {
+    const payload = payloadOf(dragEvent);
+    if (payload === null) {
       return;
     }
     dragEvent.preventDefault();
     dragEvent.stopPropagation();
-    onDrop(contentsPath, dragEvent);
+    onDrop(payload, dragEvent);
   });
 }
 
@@ -132,7 +135,12 @@ function resolveOrRefuse(
   });
 }
 
-/** Wire drop handling for a terminal: always inserts a shell-escaped path. */
+/**
+ * Wire drop handling for a terminal.
+ *
+ * The terminal is the one target that takes a multi-item drag: every dragged
+ * path is inserted in one send, separated as the settings say.
+ */
 function setupTerminalDrop(
   widget: TerminalWidget,
   state: IExtensionState
@@ -140,12 +148,25 @@ function setupTerminalDrop(
   attachDropTarget(
     widget.node,
     () => state.settings.enabled,
-    async (contentsPath, _event) => {
+    draggedPaths,
+    async (contentsPaths, _event) => {
       // Bring the terminal tab to the foreground and focus it - the
       // drag started in the file browser, which otherwise keeps focus.
       state.app.shell.activateById(widget.id);
       const session = widget.content.session;
-      let resolved: string;
+      // Both branches join the dragged path onto the server root, so an empty
+      // root is a wrong path in either: the relative branch would measure a
+      // root-relative path against an absolute cwd and emit a `..` walk to a
+      // file that is not there. The root is fetched once at activation and
+      // never again, so one failed fetch leaves it empty for the session.
+      if (!state.rootDir) {
+        console.warn(
+          '[jupyterlab_drag_and_drop_path_extension] server root ' +
+            'unavailable; nothing inserted'
+        );
+        return;
+      }
+      let resolved: string[];
       if (state.settings.pathType === 'relative') {
         const cwd = await fetchTerminalCwd(session.model.name);
         if (cwd === null) {
@@ -155,26 +176,32 @@ function setupTerminalDrop(
           );
           return;
         }
-        resolved = resolvePath(contentsPath, 'relative', {
-          rootDir: state.rootDir,
-          baseDir: cwd,
-          baseIsAbsolute: true
-        });
+        resolved = contentsPaths.map(contentsPath =>
+          resolvePath(contentsPath, 'relative', {
+            rootDir: state.rootDir,
+            baseDir: cwd,
+            baseIsAbsolute: true
+          })
+        );
       } else {
-        if (!state.rootDir) {
-          console.warn(
-            '[jupyterlab_drag_and_drop_path_extension] server root ' +
-              'unavailable; nothing inserted'
-          );
-          return;
-        }
-        resolved = resolvePath(contentsPath, 'absolute', {
-          rootDir: state.rootDir,
-          baseDir: '',
-          baseIsAbsolute: true
-        });
+        resolved = contentsPaths.map(contentsPath =>
+          resolvePath(contentsPath, 'absolute', {
+            rootDir: state.rootDir,
+            baseDir: '',
+            baseIsAbsolute: true
+          })
+        );
       }
-      session.send({ type: 'stdin', content: [shellEscape(resolved)] });
+      session.send({
+        type: 'stdin',
+        content: [
+          formatForTerminal(
+            resolved,
+            state.settings.terminalQuotePaths,
+            state.settings.terminalSeparator
+          )
+        ]
+      });
     }
   );
 }
@@ -193,6 +220,7 @@ function setupEditorDrop(widget: EditorWidget, state: IExtensionState): void {
   attachDropTarget(
     widget.node,
     () => state.settings.enabled,
+    singleDraggedPath,
     (contentsPath, event) => {
       const resolved = resolveOrRefuse(
         state,
@@ -250,6 +278,7 @@ function setupNotebookDrop(
   attachDropTarget(
     widget.node,
     () => state.settings.enabled,
+    singleDraggedPath,
     (contentsPath, event) => {
       const notebook = widget.content;
       // The cell the pointer is over takes the drop, so a drop on cell 3 does
@@ -309,6 +338,14 @@ function readSettings(loaded: ISettingRegistry.ISettings): ISettings {
     pathlibConstructor: get(
       'pathlibConstructor',
       DEFAULT_SETTINGS.pathlibConstructor
+    ),
+    terminalSeparator: get(
+      'terminalSeparator',
+      DEFAULT_SETTINGS.terminalSeparator
+    ),
+    terminalQuotePaths: get(
+      'terminalQuotePaths',
+      DEFAULT_SETTINGS.terminalQuotePaths
     )
   };
 }

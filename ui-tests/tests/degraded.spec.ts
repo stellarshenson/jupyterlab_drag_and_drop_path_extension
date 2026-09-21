@@ -65,6 +65,36 @@ test.describe('degraded server', () => {
     expect(errors).toEqual([]);
   });
 
+  test('a terminal drop inserts nothing when the server root is unknown', async ({
+    page
+  }) => {
+    // Only server-info fails here; terminal-cwd still answers. Without a root
+    // the relative branch would measure a root-relative path against an
+    // absolute working directory and emit a `..` walk to a file that is not
+    // there, so the drop must refuse rather than insert it.
+    await page.route('**/api/drag-and-drop-path/server-info*', route =>
+      route.fulfill({ status: 500, body: 'unavailable' })
+    );
+    await page.goto();
+
+    await page.contents.uploadContent('a,b\n', 'text', PLAIN_FILE);
+
+    const warnings: string[] = [];
+    page.on('console', message => {
+      if (message.type() === 'warning') {
+        warnings.push(message.text());
+      }
+    });
+
+    await openTerminalAndCaptureSends(page);
+
+    await dropOnCurrentWidget(page, [PLAIN_FILE]);
+    await page.waitForTimeout(2000);
+
+    expect(await sentStdin(page)).toEqual([]);
+    expect(warnings.some(text => text.includes('server root'))).toBe(true);
+  });
+
   test('a terminal drop inserts nothing when the cwd cannot be read', async ({
     page
   }) => {
@@ -82,31 +112,14 @@ test.describe('degraded server', () => {
       }
     });
 
-    await page.evaluate(async () => {
-      await (window as any).jupyterapp.commands.execute('terminal:create-new');
-    });
-    await page.waitForSelector('.jp-Terminal');
-    await page.waitForTimeout(1500);
-    await page.evaluate(() => {
-      const session = (window as any).jupyterapp.shell.currentWidget.content
-        .session;
-      (window as any).__sent = [];
-      const original = session.send.bind(session);
-      session.send = (message: any) => {
-        (window as any).__sent.push(message);
-        return original(message);
-      };
-    });
+    await openTerminalAndCaptureSends(page);
 
     await dropOnCurrentWidget(page, [PLAIN_FILE]);
     await page.waitForTimeout(2000);
 
     // Path type defaults to relative, which needs the cwd. Without it the
     // extension inserts nothing rather than a wrong path.
-    const sent = await page.evaluate(() =>
-      ((window as any).__sent ?? []).filter((m: any) => m.type === 'stdin')
-    );
-    expect(sent).toEqual([]);
+    expect(await sentStdin(page)).toEqual([]);
     expect(
       warnings.some(text => text.includes('terminal cwd unavailable'))
     ).toBe(true);

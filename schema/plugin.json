@@ -30,6 +30,19 @@
       "type": "string",
       "enum": ["pathlib.Path", "Path"],
       "default": "pathlib.Path"
+    },
+    "terminalSeparator": {
+      "title": "Terminal separator for several paths",
+      "description": "What separates several dropped paths in a terminal. 'space' puts them on one line, as arguments to whatever is already typed. 'newline' gives each path a line of its own, ending every line but the last with a backslash so the shell reads it as a continuation: nothing runs until you press Enter. Type the command before you drop - in bash only the last line can still be edited after a newline drop, so a command typed at the front of it runs the first dropped path instead; zsh keeps the whole buffer editable.",
+      "type": "string",
+      "enum": ["space", "newline"],
+      "default": "space"
+    },
+    "terminalQuotePaths": {
+      "title": "Quote paths in the terminal",
+      "description": "Wrap each terminal path in single quotes instead of backslash-escaping the characters that need it. Both forms reach the shell as one argument per path, and quoting is the easier of the two to edit by hand afterwards.",
+      "type": "boolean",
+      "default": false
     }
   },
   "additionalProperties": false

@@ -7,11 +7,14 @@ import {
   editorSource,
   openDocument,
   openEditor,
+  openTerminalAndCaptureSends,
   markPage,
   pageStillMarked,
   PLAIN_FILE,
+  sentStdin,
   setPluginSettings,
-  setPluginSettingsLive
+  setPluginSettingsLive,
+  SPACED_FILE
 } from './helpers';
 
 /**
@@ -22,6 +25,7 @@ import {
 
 test.beforeEach(async ({ page }) => {
   await page.contents.uploadContent('a,b\n', 'text', PLAIN_FILE);
+  await page.contents.uploadContent('a,b\n', 'text', SPACED_FILE);
 });
 
 test.describe('settings', () => {
@@ -68,7 +72,8 @@ test.describe('settings', () => {
     expect(action).toBe('move');
   });
 
-  test('a multi-item drag is not accepted', async ({ page }) => {
+  test('a multi-item drag is not accepted by an editor', async ({ page }) => {
+    // Only the terminal takes several paths at once; see drop.spec.ts.
     await page.contents.uploadContent('', 'text', 'accept3.py');
     await openEditor(page, 'accept3.py');
 
@@ -292,5 +297,57 @@ test.describe('edge cases', () => {
     expect(info.status).toBe(200);
     expect(info.body.root_dir).toMatch(/^\//);
     expect(info.body.root_dir).not.toContain('~');
+  });
+});
+
+test.describe('terminal multi-drop settings', () => {
+  test('the newline separator continues the line instead of submitting it', async ({
+    page
+  }) => {
+    await setPluginSettings(page, { terminalSeparator: 'newline' });
+    await openTerminalAndCaptureSends(page);
+
+    await dropOnCurrentWidget(page, [PLAIN_FILE, SPACED_FILE]);
+
+    await expect
+      .poll(async () => (await sentStdin(page))[0], { timeout: 15000 })
+      .toMatch(/dropme\.csv \\\r\S*my\\ data/);
+
+    const sent = (await sentStdin(page))[0];
+    // Two lines, one carriage return between them, and the backslash in front
+    // of it is what stops the shell running the first line.
+    expect(sent.split('\r')).toHaveLength(2);
+    expect(sent).toContain(' \\\r');
+    // No continuation after the last path: a trailing one would leave the
+    // shell waiting for a line the user never typed.
+    expect(sent.endsWith('.csv')).toBe(true);
+  });
+
+  test('quoting wraps each path instead of escaping it', async ({ page }) => {
+    await setPluginSettings(page, { terminalQuotePaths: true });
+    await openTerminalAndCaptureSends(page);
+
+    await dropOnCurrentWidget(page, [PLAIN_FILE, SPACED_FILE]);
+
+    await expect
+      .poll(async () => (await sentStdin(page))[0], { timeout: 15000 })
+      .toMatch(/'[^']*dropme\.csv' '[^']*my data \(1\)\.csv'$/);
+
+    // Quoting replaces escaping rather than adding to it: inside the quotes
+    // the space and the parentheses stand as themselves.
+    expect((await sentStdin(page))[0]).not.toContain('\\');
+  });
+
+  test('space and no quoting are the defaults', async ({ page }) => {
+    // No settings written, so the schema defaults are what the plugin reads.
+    await openTerminalAndCaptureSends(page);
+
+    await dropOnCurrentWidget(page, [PLAIN_FILE, SPACED_FILE]);
+
+    await expect
+      .poll(async () => (await sentStdin(page))[0], { timeout: 15000 })
+      .toMatch(/dropme\.csv \S*my\\ data\\ \\\(1\\\)\.csv$/);
+
+    expect((await sentStdin(page))[0]).not.toContain("'");
   });
 });

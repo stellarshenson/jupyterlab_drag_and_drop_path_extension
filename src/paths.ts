@@ -17,12 +17,17 @@ export type PathType = 'absolute' | 'relative';
 /** How a path is rendered into Python code. */
 export type PythonPathStyle = 'posix' | 'pathlib';
 
+/** What separates several paths sent to a terminal in one drop. */
+export type TerminalSeparator = 'space' | 'newline';
+
 /** Extension settings. */
 export interface ISettings {
   enabled: boolean;
   pathType: PathType;
   pythonPathStyle: PythonPathStyle;
   pathlibConstructor: string;
+  terminalSeparator: TerminalSeparator;
+  terminalQuotePaths: boolean;
 }
 
 /** Default settings, mirroring `schema/plugin.json`. */
@@ -30,7 +35,9 @@ export const DEFAULT_SETTINGS: ISettings = {
   enabled: true,
   pathType: 'relative',
   pythonPathStyle: 'posix',
-  pathlibConstructor: 'pathlib.Path'
+  pathlibConstructor: 'pathlib.Path',
+  terminalSeparator: 'space',
+  terminalQuotePaths: false
 };
 
 /**
@@ -146,6 +153,42 @@ export function shellEscape(path: string): string {
   return path.replace(/[^A-Za-z0-9_./@%+:,=-]/gu, '\\$&');
 }
 
+/**
+ * Wrap a path in a single-quoted shell word.
+ *
+ * Inside single quotes the shell treats every character literally, so the
+ * only one needing work is the quote itself: the word is closed, an escaped
+ * quote is emitted, and the word is reopened - the standard POSIX idiom
+ * `'\''`, which every Bourne-family shell reads as one literal quote.
+ */
+export function shellQuote(path: string): string {
+  return "'" + path.replace(/'/g, "'\\''") + "'";
+}
+
+/**
+ * Render dragged paths as the one string sent to a terminal.
+ *
+ * `space` keeps every path on one line, as arguments to whatever command is
+ * already typed. `newline` gives each path a line of its own by ending the
+ * line with a space, a backslash and a carriage return: the carriage return
+ * is what the Enter key sends, and the backslash in front of it is a shell
+ * line continuation, so the shell keeps reading instead of running what is
+ * typed. Nothing is submitted, and the paths still arrive as arguments of
+ * one command when the user presses Enter. The space before the backslash is
+ * load-bearing - the shell removes the backslash and the newline together,
+ * and without it the last character of one path would join the first of the
+ * next.
+ */
+export function formatForTerminal(
+  paths: string[],
+  quote: boolean,
+  separator: TerminalSeparator
+): string {
+  return paths
+    .map(path => (quote ? shellQuote(path) : shellEscape(path)))
+    .join(separator === 'newline' ? ' \\\r' : ' ');
+}
+
 /** Wrap a path in a single-quoted Python string literal. */
 export function pythonString(path: string): string {
   return (
@@ -213,16 +256,8 @@ export function isPythonMimeType(mimeType: string): boolean {
   return PYTHON_MIME_TYPES.includes(media);
 }
 
-/**
- * Extract the single dragged contents path from drag MIME data. Returns
- * `null` unless there is exactly one item, so multi-item drags are
- * ignored.
- */
-export function singleDraggedPath(data: unknown): string | null {
-  if (!Array.isArray(data) || data.length !== 1) {
-    return null;
-  }
-  const item = data[0];
+/** The contents path carried by one dragged item, or null if it carries none. */
+function itemPath(item: unknown): string | null {
   if (typeof item === 'string') {
     return item;
   }
@@ -234,4 +269,34 @@ export function singleDraggedPath(data: unknown): string | null {
     return (item as { path: string }).path;
   }
   return null;
+}
+
+/**
+ * Extract every dragged contents path from drag MIME data. Returns `null`
+ * for anything that is not a non-empty array of readable items, so a partly
+ * unreadable drag inserts nothing rather than a subset of what was dragged.
+ */
+export function draggedPaths(data: unknown): string[] | null {
+  if (!Array.isArray(data) || data.length === 0) {
+    return null;
+  }
+  const paths: string[] = [];
+  for (const item of data) {
+    const path = itemPath(item);
+    if (path === null) {
+      return null;
+    }
+    paths.push(path);
+  }
+  return paths;
+}
+
+/**
+ * Extract the single dragged contents path from drag MIME data. Returns
+ * `null` unless there is exactly one item, so multi-item drags are ignored
+ * by the targets that take only one.
+ */
+export function singleDraggedPath(data: unknown): string | null {
+  const paths = draggedPaths(data);
+  return paths !== null && paths.length === 1 ? paths[0] : null;
 }

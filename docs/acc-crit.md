@@ -17,20 +17,25 @@ What a file-browser drag carries and which drags the extension acts on
   - log: 2026-09-20T15:41:07Z @kj added
   - log: 2026-09-20T16:00:59Z @kj edited test-tags (replaced)
   - log: 2026-09-20T16:01:00Z @kj closed: verified by the galata suite
-- [x] `ACC-DRAG-2` **Multi-item drag inserts nothing** - HIGH; a drag carrying more than one item is ignored everywhere; nothing is inserted and no drop is accepted
-  - evidence: galata 12/12 green on 2026-09-20 (ui-tests/tests/drop.spec.ts): 'multi-item drag inserts nothing' (editor) and 'multi-item drag sends nothing' (terminal)
-  - test: select two files, drag onto a terminal, assert the terminal input is unchanged
+- [x] `ACC-DRAG-2` **Multi-item drag inserts nothing outside a terminal** - HIGH; a drag carrying more than one item is ignored by the file editor and the notebook; nothing is inserted and no drop is accepted. A terminal takes such a drag instead of refusing it
+  - related: ACC-TERM-48 - the terminal takes the multi-item drag the editor and the notebook refuse
+  - evidence: galata 42/42 green on 2026-09-21: 'multi-item drag inserts nothing' in the file editor and in the notebook (ui-tests/tests/drop.spec.ts), 'a multi-item drag is not accepted by an editor' (ui-tests/tests/settings.spec.ts)
+  - test: select two files, drag onto a notebook and onto an editor, assert nothing is inserted and no drop is accepted
   - test-tags: E2E
   - log: 2026-09-20T15:41:07Z @kj added
   - log: 2026-09-20T16:00:59Z @kj edited test-tags (replaced)
   - log: 2026-09-20T16:01:00Z @kj closed: verified by the galata suite
-- [x] `ACC-DRAG-3` **Drop target accepts only an actionable drag** - MEDIUM; `lm-dragenter` and `lm-dragover` are accepted only when the drag yields exactly one path; otherwise the event is left for other handlers
-  - evidence: galata 26/26 green on 2026-09-20: 'an enabled single-item drag is accepted' sets dropAction to move; 'a multi-item drag is not accepted' and 'a disabled drag is not accepted by the drop target' both leave it none
-  - test: drag a two-file selection over a terminal, assert no drop cursor is offered
+  - log: 2026-09-21T07:04:03Z @kj amended title "Multi-item drag inserts nothing" -> "Multi-item drag inserts nothing outside a terminal"; text "a drag carrying more than one item is ignored everywhere; nothing is inserted and no drop is accepted" -> "HIGH; a drag carrying more than one item is ignored by the file editor and the notebook; nothing is inserted and no drop is accepted. A terminal takes such a drag instead of refusing it"
+  - log: 2026-09-21T07:25:29Z @kj edited test (replaced) and evidence (replaced)
+- [x] `ACC-DRAG-3` **Drop target accepts only an actionable drag** - MEDIUM; `lm-dragenter` and `lm-dragover` are accepted only when the drag yields what the target takes - exactly one path for a file editor or a notebook, one or more for a terminal; otherwise the event is left for other handlers
+  - evidence: galata 42/42 green on 2026-09-21: 'an enabled single-item drag is accepted' and 'a multi-item drag is not accepted by an editor' (ui-tests/tests/settings.spec.ts); 'a multi-item drag is accepted' on a terminal (ui-tests/tests/drop.spec.ts)
+  - test: drag a two-file selection over an editor and over a terminal, assert no drop cursor on the first and a drop cursor on the second
   - test-tags: E2E
   - log: 2026-09-20T15:41:07Z @kj added
   - log: 2026-09-20T16:09:32Z @kj edited test-tags (replaced)
   - log: 2026-09-20T16:09:33Z @kj closed: verified by the galata suite
+  - log: 2026-09-21T07:04:03Z @kj amended text "`lm-dragenter` and `lm-dragover` are accepted only when the drag yields exactly one path; otherwise the event is left for other handlers" -> "MEDIUM; `lm-dragenter` and `lm-dragover` are accepted only when the drag yields what the target takes - exactly one path for a file editor or a notebook, one or more for a terminal; otherwise the event is left for other handlers"
+  - log: 2026-09-21T07:25:29Z @kj edited test (replaced) and evidence (replaced)
 - [x] `ACC-DRAG-4` **Edge: MIME payload absent or not an array** - MEDIUM; a drag with no `application/x-jupyter-icontents` payload, or one that is not an array, yields no path and is ignored
   - evidence: jlpm test 2026-09-20, 28 jest green: singleDraggedPath(undefined) and singleDraggedPath('a/b.csv') both return null
   - test: dispatch a synthetic lm-drop with empty MimeData, assert nothing is inserted
@@ -65,13 +70,15 @@ Dropping a file or folder onto a terminal widget
   - log: 2026-09-20T15:41:07Z @kj added
   - log: 2026-09-20T16:00:58Z @kj edited test-tags (replaced)
   - log: 2026-09-20T16:00:59Z @kj closed: verified by the galata suite
-- [x] `ACC-TERM-8` **Terminal path is unquoted** - HIGH; the terminal receives a bare escaped path, never a quoted string, so it can be completed and edited at the prompt
-  - evidence: galata 12/12 green on 2026-09-20 (ui-tests/tests/drop.spec.ts): 'plain path needs no escaping and is sent unquoted' - sent string contains no quote and no backslash
+- [x] `ACC-TERM-8` **Terminal path is unquoted by default** - HIGH; the terminal receives a bare escaped path, so it can be completed and edited at the prompt; it is wrapped in single quotes only when the `terminalQuotePaths` setting is on
+  - evidence: galata 42/42 green on 2026-09-21 (ui-tests/tests/drop.spec.ts): 'plain path needs no escaping and is sent unquoted' - the sent string carries no quote and no backslash; 'quoting wraps each path instead of escaping it' covers the setting being on
   - test: drop a plain file, assert the prompt text carries no quote characters
   - test-tags: E2E
   - log: 2026-09-20T15:41:07Z @kj added
   - log: 2026-09-20T16:00:58Z @kj edited test-tags (replaced)
   - log: 2026-09-20T16:00:59Z @kj closed: verified by the galata suite
+  - log: 2026-09-21T07:04:03Z @kj amended title "Terminal path is unquoted" -> "Terminal path is unquoted by default"; text "the terminal receives a bare escaped path, never a quoted string, so it can be completed and edited at the prompt" -> "HIGH; the terminal receives a bare escaped path, so it can be completed and edited at the prompt; it is wrapped in single quotes only when the `terminalQuotePaths` setting is on"
+  - log: 2026-09-21T07:25:29Z @kj edited evidence (replaced)
 - [x] `ACC-TERM-9` **Terminal tab is focused on drop** - MEDIUM; dropping on a terminal brings that terminal tab to the foreground and focuses it; the file browser does not keep focus
   - evidence: galata 12/12 green on 2026-09-20 (ui-tests/tests/drop.spec.ts): 'dropping on a terminal makes it the active widget' - focus moved to filebrowser first, currentWidget.id is the terminal after the drop
   - test: with the file browser focused, drop on a background terminal tab, assert that tab is active
@@ -96,11 +103,27 @@ Dropping a file or folder onto a terminal widget
   - log: 2026-09-20T15:41:07Z @kj added
   - log: 2026-09-20T16:16:11Z @kj edited test-tags (replaced)
   - log: 2026-09-20T16:16:11Z @kj closed: verified by the galata suite
-- [-] `ACC-TERM-47` **A terminal path is inserted with no trailing space** - MEDIUM; MEDIUM; the terminal receives exactly the escaped path and nothing after it
+- [-] `ACC-TERM-47` **A terminal path is inserted with no trailing space** - MEDIUM; the terminal receives exactly the escaped path and nothing after it
   - test: drop onto a terminal and assert the sent stdin ends with the path's last character
   - test-tags: E2E
   - log: 2026-09-20T17:15:11Z @kj added
   - log: 2026-09-20T17:15:21Z @kj rejected: declined as the current behaviour, recorded so the question is not reopened: the terminal receives exactly the path. A trailing space is wrong when the path is being placed inside quotes or concatenated onto a previous argument, and costs one keystroke when it is not
+  - log: 2026-09-21T08:06:25Z @kj amended text "MEDIUM; the terminal receives exactly the escaped path and nothing after it" -> "the terminal receives exactly the escaped path and nothing after it"
+- [x] `ACC-TERM-48` **Multi-item drop into a terminal inserts every path** - HIGH; a drag carrying several files dropped on a terminal sends all their paths in one insertion, in the order the drag carried them; each path is escaped or quoted on its own
+  - evidence: galata 42/42 green on 2026-09-21 (ui-tests/tests/drop.spec.ts): 'a multi-item drag sends every path in one line' - one stdin send carrying both escaped paths with exactly one unescaped space between them; jest 43/43: formatForTerminal joins in drag order and draggedPaths reads every item
+  - test: select two files, drop on a terminal, assert one stdin send carrying both resolved paths
+  - test-tags: E2E, UNIT
+  - log: 2026-09-21T07:04:11Z @kj added
+  - log: 2026-09-21T07:25:29Z @kj closed
+  - log: 2026-09-21T07:37:28Z @kj amended text "HIGH; a drag carrying several files dropped on a terminal sends all their paths in one insertion, in the order the drag carried them; each path is escaped or quoted on its own" -> "a drag carrying several files dropped on a terminal sends all their paths in one insertion, in the order the drag carried them; each path is escaped or quoted on its own"
+- [x] `ACC-TERM-51` **Terminal drop refuses when the server root is unknown** - HIGH; a terminal drop inserts nothing and logs a console warning whenever the server root is unavailable, under either path type; the resolved path is built on that root in both cases, so an empty one can only produce a path that points elsewhere
+  - related: DEF-TERM-17 - the defect this criterion was written from
+  - evidence: galata 43/43 green on 2026-09-21 (ui-tests/tests/degraded.spec.ts): 'a terminal drop inserts nothing when the server root is unknown' - nothing sent, warning logged, with the terminal-cwd endpoint still answering
+  - test: route server-info to 500 with terminal-cwd still answering, drop on a terminal, assert no stdin is sent and a server root warning is logged
+  - test-tags: E2E
+  - log: 2026-09-21T07:37:10Z @kj added
+  - log: 2026-09-21T07:37:28Z @kj amended text "HIGH; a terminal drop inserts nothing and logs a console warning whenever the server root is unavailable, under either path type; the resolved path is built on that root in both cases, so an empty one can only produce a path that points elsewhere" -> "a terminal drop inserts nothing and logs a console warning whenever the server root is unavailable, under either path type; the resolved path is built on that root in both cases, so an empty one can only produce a path that points elsewhere"
+  - log: 2026-09-21T07:47:05Z @kj closed
 
 ## File editor drop `EDIT`
 
@@ -175,12 +198,14 @@ Dropping a file or folder onto a notebook cell
   - log: 2026-09-20T15:41:08Z @kj added
   - log: 2026-09-20T16:09:32Z @kj edited test-tags (replaced)
   - log: 2026-09-20T16:09:33Z @kj closed: verified by the galata suite
-- [x] `ACC-NBOOK-44` **Drop lands in the cell under the pointer** - MEDIUM; MEDIUM; a drop over a cell inserts into that cell, whichever cell was active before; a drop over no cell - the toolbar, the gap below the last cell - goes to the active cell
+- [x] `ACC-NBOOK-44` **Drop lands in the cell under the pointer** - MEDIUM; a drop over a cell inserts into that cell, whichever cell was active before; a drop over no cell - the toolbar, the gap below the last cell - goes to the active cell
   - evidence: galata 37/37 green on 2026-09-20: 'the cell under the pointer takes the drop, not the active cell' leaves cell 0 active, drops over cell 2 and finds the path in cell 2 with cells 0 and 1 unchanged
   - test: open a notebook of three cells, leave cell 0 active, drop over cell 2, assert cell 2 received the path and cells 0 and 1 are unchanged
   - test-tags: E2E
   - log: 2026-09-20T17:15:11Z @kj added
   - log: 2026-09-20T17:30:37Z @kj closed
+  - log: 2026-09-21T08:06:25Z @kj amended text "MEDIUM; a drop over a cell inserts into that cell, whichever cell was active before; a drop over no cell - the toolbar, the gap below the last cell - goes to the active cell" -> "  - log: 2026-09-20T16:09:33Z @kj closed: verified by the galata suite"
+  - log: 2026-09-21T08:06:40Z @kj amended text "log: 2026-09-20T16:09:33Z @kj closed: verified by the galata suite" -> "a drop over a cell inserts into that cell, whichever cell was active before; a drop over no cell - the toolbar, the gap below the last cell - goes to the active cell"
 
 ## Path resolution `PATHS`
 
@@ -267,7 +292,7 @@ How a resolved path is rendered into Python source
 
 ## Settings `CONFIG`
 
-The four settings exposed in the JupyterLab settings editor
+The settings exposed in the JupyterLab settings editor
 
 - [x] `ACC-CONFIG-33` **Extension is on by default** - HIGH; the `enabled` setting defaults to true, so drag-and-drop path insertion works on a fresh install with no configuration
   - evidence: galata 26/26 green on 2026-09-20: 'enabled on by default inserts' - no settings written, a drop still inserts
@@ -320,6 +345,23 @@ The four settings exposed in the JupyterLab settings editor
   - log: 2026-09-20T15:41:09Z @kj added
   - log: 2026-09-20T16:16:11Z @kj edited test-tags (replaced)
   - log: 2026-09-20T16:16:11Z @kj closed: verified by the galata suite
+- [x] `ACC-CONFIG-49` **Terminal separator is selectable** - MEDIUM; the `terminalSeparator` setting defaults to `space`, which puts several dropped paths on one line as arguments; `newline` gives each path a line of its own, ending every line but the last with a space, a backslash and a carriage return, which the shell reads as a line continuation, so nothing is submitted and the paths arrive as arguments of one command
+  - evidence: galata 43/43 green on 2026-09-21 (ui-tests/tests/settings.spec.ts): 'the newline separator continues the line instead of submitting it' - the send splits in two on a carriage return, carries ' \\' before it and ends with the last path; 'space and no quoting are the defaults' holds the default; jest 44/44: 'continues the line under the newline separator' and 'leaves no continuation after the last path'
+  - test: set terminalSeparator to newline, drop two files on a terminal, assert the sent string splits in two on a carriage return, carries the continuation ' \\' before it and ends with the last path
+  - test-tags: E2E, UNIT
+  - log: 2026-09-21T07:04:11Z @kj added
+  - log: 2026-09-21T07:25:29Z @kj closed
+  - log: 2026-09-21T07:37:29Z @kj amended text "MEDIUM; the `terminalSeparator` setting defaults to `space`, which puts several dropped paths on one line as arguments; `newline` sends a carriage return between them, so each path becomes its own command line" -> "the `terminalSeparator` setting defaults to `space`, which puts several dropped paths on one line as arguments; `newline` sends a carriage return after every path but the last, which submits that line to the shell"
+  - log: 2026-09-21T08:06:18Z @kj amended text "the `terminalSeparator` setting defaults to `space`, which puts several dropped paths on one line as arguments; `newline` sends a carriage return after every path but the last, which submits that line to the shell" -> "the `terminalSeparator` setting defaults to `space`, which puts several dropped paths on one line as arguments; `newline` gives each path a line of its own, ending every line but the last with a space, a backslash and a carriage return, which the shell reads as a line continuation, so nothing is submitted and the paths arrive as arguments of one command"
+  - log: 2026-09-21T08:06:18Z @kj edited test (replaced)
+  - log: 2026-09-21T08:18:21Z @kj edited evidence (replaced)
+- [x] `ACC-CONFIG-50` **Terminal path quoting is selectable** - MEDIUM; the `terminalQuotePaths` setting defaults to false, so paths are backslash-escaped; set true, each path is wrapped in single quotes instead and an embedded quote is closed and reopened as `'\''`
+  - evidence: galata 42/42 green on 2026-09-21 (ui-tests/tests/settings.spec.ts): 'quoting wraps each path instead of escaping it' - both paths single-quoted, no backslash in the send; jest 43/43: shellQuote closes and reopens the quoting around an embedded quote
+  - test: set terminalQuotePaths true, drop a file whose name carries a space, assert the sent string is single-quoted and carries no backslash
+  - test-tags: E2E, UNIT
+  - log: 2026-09-21T07:04:11Z @kj added
+  - log: 2026-09-21T07:25:29Z @kj closed
+  - log: 2026-09-21T07:37:29Z @kj amended text "MEDIUM; the `terminalQuotePaths` setting defaults to false, so paths are backslash-escaped; set true, each path is wrapped in single quotes instead and an embedded quote is closed and reopened as `'\''`" -> "the `terminalQuotePaths` setting defaults to false, so paths are backslash-escaped; set true, each path is wrapped in single quotes instead and an embedded quote is closed and reopened as `'\''`"
 
 ## Server extension `SERVER`
 
@@ -351,26 +393,31 @@ The companion server extension supplying the server root and terminal working di
   - log: 2026-09-20T16:27:42Z @kj reopened: reopened: same overstated evidence; no committed test asserts a successful cwd round-trip; evidence retired: galata 12/12 green on 2026-09-20 (ui-tests/tests/drop.spec.ts): api/drag-and-drop-path/terminal-cwd/<name> returned 200 with the terminal working directory, and the terminal drops resolve against it
   - log: 2026-09-20T16:50:48Z @kj edited test-tags (replaced)
   - log: 2026-09-20T16:50:48Z @kj closed: verified by the endpoint tests
-- [x] `ACC-SERVER-43` **Edge: server extension unavailable** - MEDIUM; when the server extension is missing or not yet loaded every endpoint call returns null and the frontend keeps working; absolute drops fall back to an empty root and relative terminal drops insert nothing
-  - evidence: galata 29/29 green on 2026-09-20: 'editor drops still work when the server extension is unavailable' routes every api/drag-and-drop-path call to 500; the editor drop still inserts and no page error is raised
+- [x] `ACC-SERVER-43` **Edge: server extension unavailable** - MEDIUM; when the server extension is missing or not yet loaded every endpoint call returns null and the frontend keeps working; editor and notebook drops still insert a document-relative path, and a terminal drop inserts nothing and warns under either path type rather than emitting a path built on an empty root
+  - evidence: galata 43/43 green on 2026-09-21 (ui-tests/tests/degraded.spec.ts): 'editor drops still work when the server extension is unavailable' routes every api/drag-and-drop-path call to 500 and the editor drop still inserts with no page error; 'a terminal drop inserts nothing when the server root is unknown' covers the terminal half
   - test: disable the server extension, reload, drop on an editor, assert no console error
   - test-tags: E2E
   - log: 2026-09-20T15:41:09Z @kj added
   - log: 2026-09-20T16:16:11Z @kj edited test-tags (replaced)
   - log: 2026-09-20T16:16:11Z @kj closed: verified by the galata suite
+  - log: 2026-09-21T08:06:19Z @kj amended text "when the server extension is missing or not yet loaded every endpoint call returns null and the frontend keeps working; absolute drops fall back to an empty root and relative terminal drops insert nothing" -> "when the server extension is missing or not yet loaded every endpoint call returns null and the frontend keeps working; editor and notebook drops still insert a document-relative path, and a terminal drop inserts nothing and warns under either path type rather than emitting a path built on an empty root"
+  - log: 2026-09-21T08:18:21Z @kj edited evidence (replaced)
 
 ## Accessibility `ACCESS`
 
 Routes to the same result for a user who cannot or does not drag
 
-- [-] `ACC-ACCESS-45` **A path can be obtained without dragging** - MEDIUM; MEDIUM; a user who cannot perform a drag still has a route to a file's path
+- [-] `ACC-ACCESS-45` **A path can be obtained without dragging** - MEDIUM; a user who cannot perform a drag still has a route to a file's path
   - test: with the extension installed, right-click a file in the file browser and use Copy Path
   - test-tags: MANUAL
   - log: 2026-09-20T17:15:11Z @kj added
   - log: 2026-09-20T17:15:21Z @kj rejected: declined: JupyterLab already ships filebrowser:copy-path as Copy Path in the file browser context menu, verified present in the installed 4.6.3 bundle at /opt/conda/lib/python3.13/site-packages/jupyterlab/static/jlab_core.a3196067513a13d4.js; the route exists without this extension, so adding a second one is a convenience the user has not asked for
-- [-] `ACC-ACCESS-46` **An accepted drag is visible before the drop** - MEDIUM; MEDIUM; while a drag is over a valid target the pointer says the drop will be taken, and over an invalid one that it will not
+  - log: 2026-09-21T08:06:25Z @kj amended text "MEDIUM; a user who cannot perform a drag still has a route to a file's path" -> "a user who cannot perform a drag still has a route to a file's path"
+- [-] `ACC-ACCESS-46` **An accepted drag is visible before the drop** - MEDIUM; while a drag is over a valid target the pointer says the drop will be taken, and over an invalid one that it will not
   - test: drag a file over an open editor and over the launcher, and compare the cursor
   - test-tags: MANUAL
   - log: 2026-09-20T17:15:11Z @kj added
   - log: 2026-09-20T17:15:21Z @kj rejected: declined as already met by Lumino: Drag._setDropAction overrides the document cursor from the dropAction the dragover handler returns - no-drop when the extension declines, move when it accepts - at node_modules/@lumino/dragdrop/dist/index.js lines 397 to 419; extension CSS would restate what the cursor already says
+  - log: 2026-09-21T08:06:25Z @kj amended text "MEDIUM; while a drag is over a valid target the pointer says the drop will be taken, and over an invalid one that it will not" -> "  - log: 2026-09-20T17:15:11Z @kj added"
+  - log: 2026-09-21T08:06:40Z @kj amended text "log: 2026-09-20T17:15:11Z @kj added" -> "while a drag is over a valid target the pointer says the drop will be taken, and over an invalid one that it will not"
 

@@ -3,13 +3,16 @@
  */
 import {
   dirname,
+  draggedPaths,
   formatForPython,
+  formatForTerminal,
   join,
   normalize,
   pythonString,
   relative,
   resolvePath,
   shellEscape,
+  shellQuote,
   isPythonMimeType,
   singleDraggedPath
 } from '../paths';
@@ -226,5 +229,75 @@ describe('pythonString control characters', () => {
   it('still escapes quotes and backslashes', () => {
     expect(pythonString("/a'b")).toBe("'/a\\'b'");
     expect(pythonString('/a\\b')).toBe("'/a\\\\b'");
+  });
+});
+
+describe('shellQuote', () => {
+  it('wraps a path in single quotes and leaves its contents alone', () => {
+    expect(shellQuote('/home/my data/f (1).csv')).toBe(
+      "'/home/my data/f (1).csv'"
+    );
+  });
+
+  it('closes and reopens the quoting around an embedded quote', () => {
+    // The shell reads 'it'\''s.csv' as the single word it's.csv.
+    expect(shellQuote("it's.csv")).toBe("'it'\\''s.csv'");
+  });
+});
+
+describe('formatForTerminal', () => {
+  it('escapes each path and joins them with a space', () => {
+    expect(formatForTerminal(['a b.csv', 'c.csv'], false, 'space')).toBe(
+      'a\\ b.csv c.csv'
+    );
+  });
+
+  it('continues the line under the newline separator', () => {
+    // A carriage return is what the Enter key sends, so each path lands on
+    // its own line; the backslash in front of it is a shell line
+    // continuation, so the shell reads on instead of running the line.
+    expect(formatForTerminal(['a.csv', 'b.csv'], false, 'newline')).toBe(
+      'a.csv \\\rb.csv'
+    );
+  });
+
+  it('leaves no continuation after the last path', () => {
+    // A trailing continuation would leave the shell waiting for a line that
+    // never comes, so the user's Enter would submit nothing.
+    const sent = formatForTerminal(['a.csv', 'b.csv'], false, 'newline');
+    expect(sent.endsWith('b.csv')).toBe(true);
+    expect(sent.split('\r')).toHaveLength(2);
+  });
+
+  it('quotes each path instead of escaping it when asked to', () => {
+    expect(formatForTerminal(['a b.csv', 'c.csv'], true, 'space')).toBe(
+      "'a b.csv' 'c.csv'"
+    );
+  });
+
+  it('renders one path with no separator at all', () => {
+    expect(formatForTerminal(['a b.csv'], false, 'space')).toBe('a\\ b.csv');
+    expect(formatForTerminal(['a b.csv'], true, 'newline')).toBe("'a b.csv'");
+  });
+});
+
+describe('draggedPaths', () => {
+  it('returns every dragged path, in order', () => {
+    expect(draggedPaths(['a.csv', { path: 'b.csv' }])).toEqual([
+      'a.csv',
+      'b.csv'
+    ]);
+  });
+
+  it('returns null for an empty or non-array payload', () => {
+    expect(draggedPaths([])).toBeNull();
+    expect(draggedPaths(undefined)).toBeNull();
+    expect(draggedPaths('a.csv')).toBeNull();
+  });
+
+  it('returns null when one item carries no path, never a subset', () => {
+    // Half a drag inserted is worse than none: the user sees a command line
+    // that looks complete and is missing a file.
+    expect(draggedPaths(['a.csv', { name: 'b.csv' }])).toBeNull();
   });
 });
