@@ -1,6 +1,6 @@
 {
     "name": "jupyterlab_drag_and_drop_path_extension",
-    "version": "1.0.4",
+    "version": "1.0.5",
     "description": "Drag a file or folder from the file browser and drop it onto a terminal, Python file, or notebook to insert its path.",
     "keywords": [
         "jupyter",
@@ -64,6 +64,7 @@
         "@jupyterlab/services": "^7.0.0",
         "@jupyterlab/settingregistry": "^4.0.0",
         "@jupyterlab/terminal": "^4.0.0",
+        "@lumino/coreutils": "^2.0.0",
         "@lumino/dragdrop": "^2.0.0"
     },
     "devDependencies": {
