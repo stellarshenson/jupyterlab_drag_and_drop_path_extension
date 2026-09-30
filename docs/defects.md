@@ -160,3 +160,19 @@ The companion server extension supplying the server root and terminal working di
   - root-cause: 2026-09-20T16:28:26Z @kj get_terminal is a get-or-create API; the handler used it as a lookup
   - log: 2026-09-20T16:28:26Z @kj added
   - log: 2026-09-20T16:50:23Z @kj closed: fixed: the handler looks the name up in terminal_manager.terminals instead of calling the get-or-create get_terminal
+
+## Settings and activation `CONFIG`
+
+How the plugin reads its settings and sequences its activation
+
+- [x] `DEF-CONFIG-18` **Settings load sequenced behind the server-root fetch** - MAJOR; until api/drag-and-drop-path/server-info answered, every drop and every breadcrumb drag ran on the built-in defaults, because activate awaited the server root before loading the settings; an extension switched off inserted paths, and a request that never settled kept the defaults for the whole session
+  - evidence: src/index.ts:423 loads the settings before src/index.ts:436 fetches the server root; the pinned confirming round wf_0a8a7cfe-8cb reproduced the closure and rated the residue immaterial; jest 48/48, pytest 29/29, Galata 48/48 green on 2026-09-30
+  - repro: set enabled false, reload with the server-info response delayed, drag a crumb onto a terminal before it answers
+  - test-tags: E2E
+  - root-cause: 2026-09-30T10:54:11Z @kj activate awaited fetchServerRoot() before settingRegistry.load, so the settings load was sequenced behind a network request that can hang
+  - log: 2026-09-30T10:54:11Z @kj added
+  - log: 2026-09-30T11:12:22Z @kj no automated test pins the ordering; a Galata test written against it passed identically with and without the fix, measured both ways, and was removed rather than shipped as a false pass
+  - log: 2026-09-30T11:12:22Z @kj why it cannot be tested here: settingRegistry.load is served from the boot-time settings cache, so no per-plugin request exists to order against, and the page fixture waits out a delayed server-info route before a test can act
+  - log: 2026-09-30T11:12:23Z @kj found by devils-advocate adversarial-review, architect lens, run wf_ac3d7753-0f5; closure verified by the pinned confirming round wf_0a8a7cfe-8cb
+  - log: 2026-09-30T11:17:00Z @kj closed
+

@@ -17,15 +17,17 @@ Drag a file or folder from the file browser and drop it onto a terminal, Python 
 - **Drop onto a Python file or notebook code cell** - inserts a quoted string literal, or a `pathlib` expression joined with the `/` operator (e.g. `pathlib.Path('/home/me') / 'data' / 'file.csv'`)
 - **Drop onto any other file** - markdown, text, JSON and the rest receive the bare path, with no quoting
 - **Absolute or relative paths** - configurable; relative is computed against the terminal's working directory or the open document's directory
+- **Drag from the breadcrumbs too** - the folder trail above the file listing is a drag source, so the directory the browser is showing can be dropped on a target without first finding its row
 - **Master on/off switch** - disable the extension without uninstalling
 
 ## Usage
 
 1. Open a target alongside the file browser - a **terminal**, a **Python file**, or a **notebook**
 2. Drag a file or folder from the file browser onto the target - or several of them, onto a terminal
+   - A crumb in the folder trail above the listing can be dragged in the same way, which inserts that directory's path; the home crumb stands for the server root
 3. The path is inserted - shell-escaped in terminals, as a quoted string or a `pathlib.Path(...)` expression in Python contexts, or as plain text elsewhere
 
-In notebooks the path lands in the cell you drop it on, at that cell's cursor position; a drop away from any cell goes to the active cell. A drag carrying several items is taken by a terminal only - an editor or a notebook refuses it and the cursor shows no-drop. Whether the path is absolute or relative, how Python output is formatted, and how several terminal paths are separated, is controlled by the settings below.
+In notebooks the path lands in the cell you drop it on, at that cell's cursor position; a drop away from any cell goes to the active cell. A breadcrumb drag inserts a path and nothing else - it is declined by the file listing and by the other crumbs, so it can never move the directory it names, and a crumb that is clicked rather than dragged still navigates. A drag carrying several items is taken by a terminal only - an editor or a notebook refuses it and the cursor shows no-drop. Whether the path is absolute or relative, how Python output is formatted, and how several terminal paths are separated, is controlled by the settings below.
 
 ## Settings
 

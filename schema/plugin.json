@@ -6,7 +6,7 @@
   "properties": {
     "enabled": {
       "title": "Enable drag-and-drop path insertion",
-      "description": "Master switch. When off, dragging a file or folder onto a terminal, editor or notebook does nothing.",
+      "description": "Master switch. When off, dragging a file or folder onto a terminal, editor or notebook does nothing, and the file browser breadcrumbs are not draggable.",
       "type": "boolean",
       "default": true
     },

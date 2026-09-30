@@ -2,6 +2,7 @@
  * Unit tests for the pure path utilities in `src/paths.ts`.
  */
 import {
+  crumbContentsPath,
   dirname,
   draggedPaths,
   formatForPython,
@@ -299,5 +300,23 @@ describe('draggedPaths', () => {
     // Half a drag inserted is worse than none: the user sees a command line
     // that looks complete and is missing a file.
     expect(draggedPaths(['a.csv', { name: 'b.csv' }])).toBeNull();
+  });
+});
+
+describe('crumbContentsPath', () => {
+  it('passes a root-relative crumb path through unchanged', () => {
+    expect(crumbContentsPath('a/b/c')).toEqual('a/b/c');
+  });
+
+  it('turns the home crumb into the empty path', () => {
+    expect(crumbContentsPath('/')).toEqual('');
+  });
+
+  it('strips the leading slash the preferred crumb carries', () => {
+    expect(crumbContentsPath('/projects/data')).toEqual('projects/data');
+  });
+
+  it('returns null for an element with no data-path', () => {
+    expect(crumbContentsPath(undefined)).toBeNull();
   });
 });

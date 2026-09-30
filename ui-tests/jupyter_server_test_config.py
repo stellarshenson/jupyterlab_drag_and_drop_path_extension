@@ -23,3 +23,9 @@ c.ServerApp.base_url = "/"
 
 # Uncomment to set server log level to debug level
 # c.ServerApp.log_level = "DEBUG"
+
+# Every lab extension installed on the host is enabled in this server, and the
+# GalaxaHub message-of-the-day extension opens its own tab on lab start. Galata
+# waits for the Launcher to be the active tab before it hands a page to a test,
+# so that tab makes every test in the suite time out before its first line runs.
+c.GalaxaHubMotd.open_on_start = False

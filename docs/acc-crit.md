@@ -51,6 +51,27 @@ What a file-browser drag carries and which drags the extension acts on
   - log: 2026-09-20T15:42:33Z @kj closed: verified by the jest suite
   - log: 2026-09-20T16:50:49Z @kj amended text "a payload entry that is an object carrying a string `path` property is read the same as a bare string entry" -> "a payload entry given as an object carrying a string `path` is tolerated and read like a bare string; the file browser only ever sends `string[]` on this MIME, so this is defensive tolerance rather than a shape the product must receive"
   - log: 2026-09-20T16:50:49Z @kj kept the defensive branch after review: it is 7 lines, costs nothing at runtime, and removing it would narrow behaviour on an assumption about what future JupyterLab versions put on the drag
+- [x] `ACC-DRAG-52` **A breadcrumb drag cannot move the directory** - HIGH; a drag started from a crumb carries application/x-jupyterlab-drag-and-drop-path, not application/x-jupyter-icontents, so the file listing and the other crumbs decline it; dropping a crumb on either inserts nothing and moves nothing, and only this extension's own targets take it
+  - evidence: galata 48/48 green on 2026-09-30: 'a crumb drag never moves the directory' (ui-tests/tests/breadcrumb.spec.ts) - crumbdir/sub is still in place after its crumb is dropped on the home crumb
+  - test: stand in a subdirectory, drag its crumb onto the home crumb, assert the directory is still where it was
+  - test-tags: E2E
+  - log: 2026-09-30T09:40:33Z @kj added
+  - log: 2026-09-30T09:47:08Z @kj closed
+- [x] `ACC-DRAG-53` **A crumb that is clicked still navigates** - MEDIUM; a press on a crumb that does not travel past the drag threshold reaches the breadcrumb as an ordinary click, and the file browser opens that directory as it did before the extension was installed
+  - evidence: galata 48/48 green on 2026-09-30: 'a plain click on a crumb still navigates' (ui-tests/tests/breadcrumb.spec.ts)
+  - test: stand in a subdirectory, click the parent crumb, assert the file browser moved to the parent
+  - test-tags: E2E
+  - log: 2026-09-30T09:40:33Z @kj added
+  - log: 2026-09-30T09:47:08Z @kj closed
+- [x] `ACC-DRAG-54` **Breadcrumb is a drag source** - HIGH; pressing a crumb in the file browser's folder trail and moving more than 5 px starts a drag carrying that directory's contents path, droppable on a terminal, editor or notebook like a folder from the listing; the home crumb stands for the server root
+  - evidence: galata 48/48 green on 2026-09-30: 'a crumb dropped on a terminal inserts its directory path' and 'the home crumb inserts the server root' (ui-tests/tests/breadcrumb.spec.ts); jest 48/48 covers crumbContentsPath
+  - related: ACC-DRAG-52 - the private MIME type is what keeps a crumb drag from moving the directory
+  - related: ACC-DRAG-53 - the drag threshold is what leaves an ordinary click to the breadcrumb
+  - test: open a folder in the file browser, drag its crumb onto a terminal, assert the terminal receives that directory's path
+  - test-tags: UNIT, E2E
+  - mechanism: 2026-09-30T09:40:45Z @kj one delegated mousedown listener on the document, because the breadcrumb widget rebuilds its crumbs on every directory change; the path comes from the crumb's data-path attribute with the leading slash removed
+  - log: 2026-09-30T09:40:45Z @kj added
+  - log: 2026-09-30T09:47:08Z @kj closed
 
 ## Terminal drop `TERM`
 
@@ -301,13 +322,16 @@ The settings exposed in the JupyterLab settings editor
   - log: 2026-09-20T15:41:09Z @kj added
   - log: 2026-09-20T16:09:32Z @kj edited test-tags (replaced)
   - log: 2026-09-20T16:09:33Z @kj closed: verified by the galata suite
-- [x] `ACC-CONFIG-34` **Disabling makes the extension inert** - HIGH; with `enabled` false no drop is accepted and nothing is inserted anywhere; drags behave as if the extension were not installed
-  - evidence: galata 26/26 green on 2026-09-20: 'enabled off makes the extension inert' - editor stays empty after a drop
+- [x] `ACC-CONFIG-34` **Disabling makes the extension inert** - HIGH; with `enabled` false no drop is accepted and nothing is inserted anywhere, and the file browser breadcrumbs stay undraggable; drags behave as if the extension were not installed
+  - related: ACC-DRAG-54 - the master switch gates the breadcrumb drag source as well as the drop targets
+  - evidence: galata 48/48 green on 2026-09-30: 'enabled off makes the extension inert' (editor stays empty) and 'the master switch stops the drag from starting at all' (no drag image appears over a crumb)
   - test: set enabled false, drop on a terminal and on a notebook, assert no change in either
   - test-tags: E2E
   - log: 2026-09-20T15:41:09Z @kj added
   - log: 2026-09-20T16:09:32Z @kj edited test-tags (replaced)
   - log: 2026-09-20T16:09:33Z @kj closed: verified by the galata suite
+  - log: 2026-09-30T09:40:58Z @kj amended text "with `enabled` false no drop is accepted and nothing is inserted anywhere; drags behave as if the extension were not installed" -> "with `enabled` false no drop is accepted and nothing is inserted anywhere, and the file browser breadcrumbs stay undraggable; drags behave as if the extension were not installed"
+  - log: 2026-09-30T09:47:08Z @kj edited evidence "galata 26/26 green on 2026-09-20: 'enabled off makes the extension inert' - editor stays empty after a drop" -> "galata 48/48 green on 2026-09-30: 'enabled off makes the extension inert' (editor stays empty) and 'the master switch stops the drag from starting at all' (no drag image appears over a crumb)"
 - [x] `ACC-CONFIG-35` **Path type defaults to relative** - MEDIUM; the `pathType` setting defaults to relative, with absolute as the alternative
   - evidence: galata 26/26 green on 2026-09-20: 'relative is the default path type' - a drop into deep/rel.py inserts '../dropme.csv'
   - test: fresh profile, drop into a subdirectory document, assert a relative path

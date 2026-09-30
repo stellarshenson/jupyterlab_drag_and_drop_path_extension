@@ -2,6 +2,23 @@
 
 <!-- <START NEW CHANGELOG ENTRY> -->
 
+## [1.0.5] - 2026-09-30
+
+### Added
+
+- The file browser's breadcrumb trail is a drag source: a crumb dropped on a terminal, file editor or notebook inserts that directory's path, and the home crumb stands for the server root
+- A breadcrumb drag carries the extension's own MIME type rather than the file browser's, so the listing and the other crumbs decline it and a crumb drag can never move the directory it names
+
+### Changed
+
+- A drop target reads either the file browser's contents MIME type or the extension's own, so one code path serves both drag sources
+- The master switch now governs the breadcrumbs as well: with the extension off they are not draggable at all
+- The Galata server config disables the workstation's message-of-the-day extension, which opened its own tab on lab start and made every test in the suite time out before its first line
+
+### Fixed
+
+- Activation awaited the server root before loading the settings, so until `api/drag-and-drop-path/server-info` answered every handler ran on the built-in defaults: an extension the user had switched off went on inserting paths, and a request that never settled kept the defaults for the whole session
+
 ## [1.0.4] - 2026-09-21
 
 ### Added

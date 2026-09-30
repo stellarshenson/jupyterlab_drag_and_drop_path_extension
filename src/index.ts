@@ -9,6 +9,7 @@ import { ISettingRegistry } from '@jupyterlab/settingregistry';
 import { ITerminalTracker } from '@jupyterlab/terminal';
 import { Drag } from '@lumino/dragdrop';
 
+import { attachCrumbDragSource } from './crumbs';
 import {
   CONTENTS_MIME,
   DEFAULT_SETTINGS,
@@ -18,6 +19,7 @@ import {
   formatForTerminal,
   isPythonMimeType,
   ISettings,
+  PATH_MIME,
   resolvePath,
   singleDraggedPath
 } from './paths';
@@ -53,8 +55,18 @@ function attachDropTarget<T>(
   extract: (data: unknown) => T | null,
   onDrop: (payload: T, event: Drag.Event) => void
 ): void {
-  const payloadOf = (event: Drag.Event): T | null =>
-    isEnabled() ? extract(event.mimeData.getData(CONTENTS_MIME)) : null;
+  const payloadOf = (event: Drag.Event): T | null => {
+    if (!isEnabled()) {
+      return null;
+    }
+    // A drag out of the file listing carries `CONTENTS_MIME`; one this
+    // extension started from a breadcrumb carries its own type, so that
+    // JupyterLab's move targets leave it alone. Both hold the same payload.
+    const data =
+      event.mimeData.getData(CONTENTS_MIME) ??
+      event.mimeData.getData(PATH_MIME);
+    return extract(data);
+  };
 
   node.addEventListener('lm-dragenter', (event: Event) => {
     if (payloadOf(event as Drag.Event) === null) {
@@ -382,9 +394,12 @@ const plugin: JupyterFrontEndPlugin<void> = {
     };
 
     // Attach the drop targets first. Every handler reads `state` at drop
-    // time, never at attach time, so the fetches below gate nothing - and if
-    // one of them never settles (a hung proxy, a blocked server) awaiting it
-    // first would leave the extension permanently inert with no error.
+    // time, never at attach time, so nothing below has to be awaited before
+    // the extension is live. The settings are loaded before the server root
+    // is fetched, and that order matters: a `server-info` request that never
+    // settles would otherwise hold the settings load behind it and leave
+    // every handler on the defaults, so an extension the user switched off
+    // would go on inserting paths for the rest of the session.
     terminals.forEach(widget => setupTerminalDrop(widget, state));
     terminals.widgetAdded.connect((_, widget) =>
       setupTerminalDrop(widget, state)
@@ -398,10 +413,11 @@ const plugin: JupyterFrontEndPlugin<void> = {
       setupNotebookDrop(widget, state)
     );
 
-    const rootDir = await fetchServerRoot();
-    if (rootDir !== null) {
-      state.rootDir = rootDir;
-    }
+    // The file browser's breadcrumbs are a drop target in JupyterLab but not
+    // a drag source, so the directory the browser is showing cannot be
+    // dragged anywhere. This makes each crumb draggable onto the targets
+    // above.
+    attachCrumbDragSource(() => state.settings.enabled);
 
     try {
       const loaded = await settingRegistry.load(PLUGIN_ID);
@@ -415,6 +431,11 @@ const plugin: JupyterFrontEndPlugin<void> = {
         '[jupyterlab_drag_and_drop_path_extension] could not load settings:',
         error
       );
+    }
+
+    const rootDir = await fetchServerRoot();
+    if (rootDir !== null) {
+      state.rootDir = rootDir;
     }
   }
 };

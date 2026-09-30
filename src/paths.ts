@@ -11,6 +11,16 @@
  */
 export const CONTENTS_MIME = 'application/x-jupyter-icontents';
 
+/**
+ * MIME type this extension sets on a drag it starts itself, from a file
+ * browser breadcrumb. The payload is the same as `CONTENTS_MIME` carries - an
+ * array of contents paths - under a private name so that JupyterLab's own
+ * drop targets decline it: the file listing and the other crumbs read
+ * `CONTENTS_MIME` as "move these items here", and a breadcrumb drag asks for
+ * a path to be inserted, not for a directory to be moved.
+ */
+export const PATH_MIME = 'application/x-jupyterlab-drag-and-drop-path';
+
 /** Whether dropped paths are absolute or relative. */
 export type PathType = 'absolute' | 'relative';
 
@@ -299,4 +309,20 @@ export function draggedPaths(data: unknown): string[] | null {
 export function singleDraggedPath(data: unknown): string | null {
   const paths = draggedPaths(data);
   return paths !== null && paths.length === 1 ? paths[0] : null;
+}
+
+/**
+ * The contents path a file browser breadcrumb stands for, read from its
+ * `data-path` attribute, or `null` when the element carries none.
+ *
+ * A crumb for a directory under the server root holds a root-relative path,
+ * while the home and preferred crumbs hold one with a leading slash. Removing
+ * the slash puts both in the form the contents API uses, in which the server
+ * root itself is the empty string.
+ */
+export function crumbContentsPath(dataPath: string | undefined): string | null {
+  if (dataPath === undefined) {
+    return null;
+  }
+  return dataPath.replace(/^\/+/, '');
 }

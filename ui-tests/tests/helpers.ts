@@ -1,5 +1,5 @@
 import { expect } from '@jupyterlab/galata';
-import type { Page } from '@playwright/test';
+import type { Locator, Page } from '@playwright/test';
 
 /**
  * Shared fixtures and drivers for the functional suite.
@@ -380,4 +380,76 @@ export async function waitForExtension(page: Page): Promise<void> {
     PLUGIN_ID,
     { timeout: 30000 }
   );
+}
+
+/** The centre point of an element, for the real-mouse drags below. */
+export async function centreOf(
+  locator: Locator
+): Promise<{ x: number; y: number }> {
+  const box = await locator.boundingBox();
+  if (!box) {
+    throw new Error('element has no box on screen');
+  }
+  return { x: box.x + box.width / 2, y: box.y + box.height / 2 };
+}
+
+/** A file browser breadcrumb, addressed by the path it carries. */
+export function crumb(page: Page, dataPath: string): Locator {
+  return page.locator(`.jp-BreadCrumbs [data-path="${dataPath}"]`);
+}
+
+/**
+ * Drag a breadcrumb with the real mouse and release it over a point.
+ *
+ * Nothing here is synthetic, unlike the drop drivers above: the extension's
+ * own mousedown handler runs, Lumino builds and moves the drag, and the
+ * element under the release point receives the drop. That whole chain is what
+ * makes the breadcrumb a drag source, so only a real mouse exercises it.
+ */
+export async function dragCrumbTo(
+  page: Page,
+  dataPath: string,
+  target: { x: number; y: number }
+): Promise<boolean> {
+  const start = await centreOf(crumb(page, dataPath));
+  await page.mouse.move(start.x, start.y);
+  await page.mouse.down();
+  // Several steps, not one jump: the first crosses the drag threshold and
+  // starts the drag, and the ones after it are what Lumino tracks the drop
+  // target with.
+  await page.mouse.move(target.x, target.y, { steps: 12 });
+  // Whether a drag really started. Lumino puts the drag image in the body for
+  // the duration of the drag and takes it away on release, so this is the one
+  // moment the question can be answered - and it is what tells a refused drop
+  // apart from a gesture that never became a drag.
+  const started = (await page.locator('.lm-mod-drag-image').count()) > 0;
+  await page.mouse.up();
+  return started;
+}
+
+/**
+ * Point the file browser at a directory and wait for its crumb to appear.
+ *
+ * Galata's own `filebrowser.openDirectory` double-clicks a listing row found
+ * by its accessible name, which the extensions installed on this workstation
+ * rearrange. The command is the file browser's public entry point and does
+ * not depend on the panel's markup.
+ */
+export async function openFolder(page: Page, path: string): Promise<void> {
+  await activateFileBrowser(page);
+  await page.evaluate(async (path: string) => {
+    await (window as any).jupyterapp.commands.execute(
+      'filebrowser:go-to-path',
+      { path }
+    );
+  }, path);
+  await crumb(page, path).waitFor();
+}
+
+/** Bring the file browser to the front, so its breadcrumbs are on screen. */
+export async function activateFileBrowser(page: Page): Promise<void> {
+  await page.evaluate(() =>
+    (window as any).jupyterapp.commands.execute('filebrowser:activate')
+  );
+  await page.locator('.jp-BreadCrumbs').first().waitFor();
 }
