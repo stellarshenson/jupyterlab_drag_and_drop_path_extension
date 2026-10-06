@@ -2,6 +2,12 @@
 
 <!-- <START NEW CHANGELOG ENTRY> -->
 
+## [1.0.6] - 2026-10-06
+
+### Fixed
+
+- Dragging a breadcrumb crumb also turned on the browser's text selection, so the crumb and the text the pointer passed over were painted blue and stayed highlighted until the next click; the file listing's rows carry a `user-select` rule that stops this and the crumbs carry none
+
 ## [1.0.5] - 2026-09-30
 
 ### Added

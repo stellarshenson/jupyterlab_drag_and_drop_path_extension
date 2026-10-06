@@ -74,6 +74,11 @@ export function attachCrumbDragSource(isEnabled: () => boolean): void {
     if (crumb === null || path === null) {
       return;
     }
+    // The listing's rows carry `user-select: none`; the crumbs carry none, so
+    // without this a press starts a text selection as well as a drag.
+    // Suppressing the default here rather than in CSS leaves the crumbs
+    // selectable by hand whenever this extension is switched off.
+    event.preventDefault();
     const pressX = event.clientX;
     const pressY = event.clientY;
 

@@ -176,3 +176,18 @@ How the plugin reads its settings and sequences its activation
   - log: 2026-09-30T11:12:23Z @kj found by devils-advocate adversarial-review, architect lens, run wf_ac3d7753-0f5; closure verified by the pinned confirming round wf_0a8a7cfe-8cb
   - log: 2026-09-30T11:17:00Z @kj closed
 
+## Drag source `DRAG`
+
+Starting a drag from the file browser, from the listing or from the breadcrumb trail
+
+- [x] `DEF-DRAG-19` **A breadcrumb drag also turns on the text selection** - MEDIUM; pressing a crumb starts a native text selection, so dragging one highlights text across the file browser and the main panel until the next click; JupyterLab's own listing items set user-select none but the breadcrumb items do not
+  - evidence: src/crumbs.ts calls preventDefault on the crumb mousedown; the new Galata case 'a crumb drag does not turn on the text selection' failed against the released 1.0.5 build with the Launcher text selected and passes against the fix; Galata 49/49, jest 48/48, pytest 29/29 green on 2026-10-06
+  - related: ACC-DRAG-54 - the drag source this defect sits in
+  - repro: open a folder, drag its crumb onto a terminal, look at the crumb and at the text behind the pointer
+  - test-tags: E2E
+  - root-cause: 2026-10-06T11:28:54Z @kj the mousedown handler in src/crumbs.ts never calls preventDefault, so the browser starts its own text selection at the press point
+  - log: 2026-10-06T11:28:54Z @kj added
+  - log: 2026-10-06T11:36:56Z @kj closed
+  - log: 2026-10-06T12:24:09Z @kj survived devils-advocate adversarial-review with architect, bug-hunter and ux-designer, run wf_32a55d34-5bd: SHIP on round 1, 2 MINOR findings, empty change plan
+  - log: 2026-10-06T12:24:09Z @kj the review found a false comment claiming the test cleared a selection the navigation left; nothing before it uses a pointer, so the reset was deleted and the suite stayed green, and the duplicated symptom prose was trimmed from both files
+

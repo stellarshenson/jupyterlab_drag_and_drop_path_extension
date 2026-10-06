@@ -101,6 +101,21 @@ test.describe('breadcrumb drag source', () => {
     expect(await sentStdin(page)).toEqual([]);
   });
 
+  test('a crumb drag does not turn on the text selection', async ({ page }) => {
+    await openFolder(page, DIR);
+
+    await dragCrumbTo(
+      page,
+      DIR,
+      await centreOf(page.locator('#jp-main-dock-panel'))
+    );
+
+    const selected = await page.evaluate(
+      () => window.getSelection()?.toString() ?? ''
+    );
+    expect(selected).toBe('');
+  });
+
   test('a plain click on a crumb still navigates', async ({ page }) => {
     await openFolder(page, CHILD);
 
