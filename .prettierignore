@@ -6,3 +6,6 @@ node_modules
 jupyterlab_drag_and_drop_path_extension
 .claude
 docs
+eslint.config.mjs
+.venv
+.agents

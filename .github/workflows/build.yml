@@ -21,10 +21,11 @@ jobs:
     - name: Base Setup
       uses: jupyterlab/maintainer-tools/.github/actions/base-setup@v1
       with:
+        python_version: '3.13'
         node_version: '20'
 
     - name: Install dependencies
-      run: python -m pip install -U "jupyterlab>=4.0.0,<5"
+      run: python -m pip install -U "jupyterlab>=4.6,<5"
 
     - name: Lint the extension
       run: |
@@ -71,7 +72,7 @@ jobs:
     - name: Install Python
       uses: actions/setup-python@v5
       with:
-        python-version: '3.10'
+        python-version: '3.13'
         architecture: 'x64'
     - uses: actions/download-artifact@v4
       with:
@@ -83,7 +84,7 @@ jobs:
         sudo rm -rf $(which node)
         sudo rm -rf $(which node)
 
-        pip install "jupyterlab>=4.0.0,<5" jupyterlab_drag_and_drop_path_extension*.whl
+        pip install "jupyterlab>=4.6,<5" jupyterlab_drag_and_drop_path_extension*.whl
 
 
         jupyter server extension list
@@ -107,6 +108,7 @@ jobs:
     - name: Base Setup
       uses: jupyterlab/maintainer-tools/.github/actions/base-setup@v1
       with:
+        python_version: '3.13'
         node_version: '20'
 
     - name: Download extension package
@@ -117,7 +119,7 @@ jobs:
     - name: Install the extension
       run: |
         set -eux
-        python -m pip install "jupyterlab>=4.0.0,<5" jupyterlab_drag_and_drop_path_extension*.whl
+        python -m pip install "jupyterlab>=4.6,<5" jupyterlab_drag_and_drop_path_extension*.whl
 
     - name: Install dependencies
       working-directory: ui-tests
@@ -136,8 +138,7 @@ jobs:
     - name: Install browser
       run: |
         set -eux
-        jlpm playwright install-deps
-        jlpm playwright install chromium
+        jlpm playwright install chromium --only-shell
       working-directory: ui-tests
 
     - name: Execute integration tests
@@ -162,6 +163,7 @@ jobs:
       - uses: actions/checkout@v4
       - uses: jupyterlab/maintainer-tools/.github/actions/base-setup@v1
         with:
+          python_version: '3.13'
           node_version: '20'
       - uses: jupyterlab/maintainer-tools/.github/actions/check-links@v1
         with:

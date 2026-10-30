@@ -42,7 +42,7 @@ Open **Settings → Settings Editor → Drag and Drop Path**. Each entry below l
 
 ## Requirements
 
-- JupyterLab >= 4.0.0
+- JupyterLab >= 4.6.0
 - The wheel also installs and auto-enables a `jupyter_server` extension, which supplies the server root and each terminal's working directory
 - Relative paths **in a terminal** need that server extension and a readable process table - `/proc` on Linux, `lsof` on macOS. Where it is unavailable the extension inserts nothing rather than a wrong path; absolute paths and all editor and notebook drops are unaffected
 

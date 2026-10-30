@@ -132,3 +132,7 @@ dmypy.json
 
 # jest-junit report, written at the repo root by every test run
 junit.xml
+
+# Run output
+logs/
+tmp/
