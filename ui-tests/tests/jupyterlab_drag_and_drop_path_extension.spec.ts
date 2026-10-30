@@ -19,7 +19,7 @@ test('should emit an activation console message', async ({ page }) => {
     logs.filter(
       s =>
         s ===
-        'JupyterLab extension jupyterlab_drag_and_drop_path_extension is activated!'
+        'JupyterLab extension @stellarshenson/jupyterlab-drag-and-drop-path-extension is activated!'
     )
   ).toHaveLength(1);
 });

@@ -17,7 +17,8 @@ import type { Locator, Page } from '@playwright/test';
  */
 
 export const CONTENTS_MIME = 'application/x-jupyter-icontents';
-export const PLUGIN_ID = 'jupyterlab_drag_and_drop_path_extension:plugin';
+export const PLUGIN_ID =
+  '@stellarshenson/jupyterlab-drag-and-drop-path-extension:plugin';
 
 /** Fixture the drags point at. */
 export const PLAIN_FILE = 'dropme.csv';

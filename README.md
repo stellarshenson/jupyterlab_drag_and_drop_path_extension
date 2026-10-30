@@ -1,7 +1,7 @@
 # jupyterlab_drag_and_drop_path_extension
 
 [![GitHub Actions](https://github.com/stellarshenson/jupyterlab_drag_and_drop_path_extension/actions/workflows/build.yml/badge.svg)](https://github.com/stellarshenson/jupyterlab_drag_and_drop_path_extension/actions/workflows/build.yml)
-[![npm version](https://img.shields.io/npm/v/jupyterlab_drag_and_drop_path_extension.svg)](https://www.npmjs.com/package/jupyterlab_drag_and_drop_path_extension)
+[![npm version](https://img.shields.io/npm/v/@stellarshenson/jupyterlab-drag-and-drop-path-extension.svg)](https://www.npmjs.com/package/@stellarshenson/jupyterlab-drag-and-drop-path-extension)
 [![PyPI version](https://img.shields.io/pypi/v/jupyterlab-drag-and-drop-path-extension.svg)](https://pypi.org/project/jupyterlab-drag-and-drop-path-extension/)
 [![Total PyPI downloads](https://static.pepy.tech/badge/jupyterlab-drag-and-drop-path-extension)](https://pepy.tech/project/jupyterlab-drag-and-drop-path-extension)
 [![JupyterLab 4](https://img.shields.io/badge/JupyterLab-4-orange.svg)](https://jupyterlab.readthedocs.io/en/stable/)

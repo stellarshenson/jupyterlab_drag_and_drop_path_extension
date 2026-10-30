@@ -12,7 +12,7 @@ except ImportError:
 def _jupyter_labextension_paths():
     return [{
         "src": "labextension",
-        "dest": "jupyterlab_drag_and_drop_path_extension"
+        "dest": "@stellarshenson/jupyterlab-drag-and-drop-path-extension"
     }]
 
 

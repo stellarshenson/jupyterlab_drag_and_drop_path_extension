@@ -45,8 +45,8 @@ artifacts = ["jupyterlab_drag_and_drop_path_extension/labextension"]
 exclude = [".github", "binder", ".claude", "docs", "ui-tests", "junit.xml", "uv.lock"]
 
 [tool.hatch.build.targets.wheel.shared-data]
-"jupyterlab_drag_and_drop_path_extension/labextension" = "share/jupyter/labextensions/jupyterlab_drag_and_drop_path_extension"
-"install.json" = "share/jupyter/labextensions/jupyterlab_drag_and_drop_path_extension/install.json"
+"jupyterlab_drag_and_drop_path_extension/labextension" = "share/jupyter/labextensions/@stellarshenson/jupyterlab-drag-and-drop-path-extension"
+"install.json" = "share/jupyter/labextensions/@stellarshenson/jupyterlab-drag-and-drop-path-extension/install.json"
 "jupyter-config/server-config" = "etc/jupyter/jupyter_server_config.d"
 
 [tool.hatch.build.hooks.version]

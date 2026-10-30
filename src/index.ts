@@ -28,7 +28,8 @@ import { fetchServerRoot, fetchTerminalCwd } from './server';
 /**
  * The plugin id, also the id of the settings schema.
  */
-const PLUGIN_ID = 'jupyterlab_drag_and_drop_path_extension:plugin';
+const PLUGIN_ID =
+  '@stellarshenson/jupyterlab-drag-and-drop-path-extension:plugin';
 
 /** Widget types tracked by the JupyterLab trackers. */
 type TerminalWidget = NonNullable<ITerminalTracker['currentWidget']>;
@@ -363,7 +364,7 @@ function readSettings(loaded: ISettingRegistry.ISettings): ISettings {
 }
 
 /**
- * Initialization data for the jupyterlab_drag_and_drop_path_extension extension.
+ * Initialization data for the @stellarshenson/jupyterlab-drag-and-drop-path-extension extension.
  */
 const plugin: JupyterFrontEndPlugin<void> = {
   id: PLUGIN_ID,
@@ -384,7 +385,7 @@ const plugin: JupyterFrontEndPlugin<void> = {
     notebooks: INotebookTracker
   ): Promise<void> => {
     console.log(
-      'JupyterLab extension jupyterlab_drag_and_drop_path_extension is activated!'
+      'JupyterLab extension @stellarshenson/jupyterlab-drag-and-drop-path-extension is activated!'
     );
 
     const state: IExtensionState = {
