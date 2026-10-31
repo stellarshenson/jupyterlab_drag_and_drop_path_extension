@@ -108,6 +108,16 @@
         "access": "public"
     },
     "jupyterlab": {
+        "discovery": {
+            "server": {
+                "managers": [
+                    "pip"
+                ],
+                "base": {
+                    "name": "jupyterlab_drag_and_drop_path_extension"
+                }
+            }
+        },
         "extension": true,
         "outputDir": "jupyterlab_drag_and_drop_path_extension/labextension",
         "schemaDir": "schema"
