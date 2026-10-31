@@ -22,7 +22,6 @@ jobs:
       uses: jupyterlab/maintainer-tools/.github/actions/base-setup@v1
       with:
         python_version: '3.13'
-        node_version: '20'
 
     - name: Install dependencies
       run: python -m pip install -U "jupyterlab>=4.6,<5"
@@ -43,11 +42,18 @@ jobs:
         set -eux
         python -m pip install .[test]
 
+        pytest -vv -r ap --cov jupyterlab_drag_and_drop_path_extension
         jupyter server extension list
         jupyter server extension list 2>&1 | grep -ie "jupyterlab_drag_and_drop_path_extension.*OK"
+
         jupyter labextension list
         jupyter labextension list 2>&1 | grep -ie "@stellarshenson/jupyterlab-drag-and-drop-path-extension.*OK"
         python -m jupyterlab.browser_check
+
+    - name: Check that all endpoints are authenticated
+      run: |
+        set -eux
+        python .github/scripts/check_auth.py
 
     - name: Package the extension
       run: |
@@ -89,6 +95,7 @@ jobs:
 
         jupyter server extension list
         jupyter server extension list 2>&1 | grep -ie "jupyterlab_drag_and_drop_path_extension.*OK"
+
         jupyter labextension list
         jupyter labextension list 2>&1 | grep -ie "@stellarshenson/jupyterlab-drag-and-drop-path-extension.*OK"
         python -m jupyterlab.browser_check --no-browser-test
@@ -109,7 +116,6 @@ jobs:
       uses: jupyterlab/maintainer-tools/.github/actions/base-setup@v1
       with:
         python_version: '3.13'
-        node_version: '20'
 
     - name: Download extension package
       uses: actions/download-artifact@v4
@@ -164,7 +170,6 @@ jobs:
       - uses: jupyterlab/maintainer-tools/.github/actions/base-setup@v1
         with:
           python_version: '3.13'
-          node_version: '20'
       - uses: jupyterlab/maintainer-tools/.github/actions/check-links@v1
         with:
-          ignore_links: "https://www.npmjs.com/package/.* https://pepy.tech/.* https://static.pepy.tech/.*"
+          ignore_links: "https://www.youtube.com/.* https://www.npmjs.com/package/.* https://pepy.tech/.* https://static.pepy.tech/.*"

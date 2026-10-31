@@ -1,6 +1,6 @@
 {
     "name": "@stellarshenson/jupyterlab-drag-and-drop-path-extension",
-    "version": "1.0.8",
+    "version": "1.0.9",
     "description": "Drag a file or folder from the file browser and drop it onto a terminal, Python file, or notebook to insert its path.",
     "keywords": [
         "jupyter",
@@ -19,7 +19,8 @@
     "files": [
         "lib/**/*.{d.ts,eot,gif,html,jpg,js,js.map,json,png,svg,woff2,ttf}",
         "style/**/*.{css,js,eot,gif,html,jpg,json,png,svg,woff2,ttf}",
-        "src/**/*.{ts,tsx}"
+        "src/**/*.{ts,tsx}",
+        "schema/*.json"
     ],
     "main": "lib/index.js",
     "types": "lib/index.d.ts",
@@ -81,6 +82,7 @@
         "eslint-plugin-prettier": "^5.5.0",
         "globals": "^15.15.0",
         "jest": "^29.7.0",
+        "mkdirp": "^1.0.3",
         "npm-run-all2": "^7.0.1",
         "prettier": "^3.9.0",
         "rimraf": "^5.0.1",
