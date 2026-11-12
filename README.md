@@ -1,7 +1,7 @@
 # jupyterlab_drag_and_drop_path_extension
 
 > [!WARNING]
-> Retired: this extension is superseded by [jupyterlab_advanced_file_browser_extension](https://github.com/stellarshenson/jupyterlab_advanced_file_browser_extension), which provides drag-and-drop path insertion together with folder unfolding, Unix Style Sorting and Open in Terminal in one extension. This package is uninstalled; install `jupyterlab_advanced_file_browser_extension` instead. This repository is kept for history.
+> Retired: this extension is superseded by [jupyterlab_advanced_file_browser_extension](https://github.com/stellarshenson/jupyterlab_advanced_file_browser_extension), which provides drag-and-drop path insertion together with folder unfolding, Unix Style Sorting and Open in Terminal in one extension. Install `jupyterlab_advanced_file_browser_extension` instead. This repository is kept for history.
 
 [![GitHub Actions](https://github.com/stellarshenson/jupyterlab_drag_and_drop_path_extension/actions/workflows/build.yml/badge.svg)](https://github.com/stellarshenson/jupyterlab_drag_and_drop_path_extension/actions/workflows/build.yml)
 [![npm version](https://img.shields.io/npm/v/@stellarshenson/jupyterlab-drag-and-drop-path-extension.svg)](https://www.npmjs.com/package/@stellarshenson/jupyterlab-drag-and-drop-path-extension)
